@@ -35,16 +35,15 @@ git clone https://github.com/beedrill/gym_trafficlight.git
 cd gym_trafficlight
 pip install -e .
 
-# SUMO
-see SUMO installation [here]https://github.com/beedrill/gym_trafficlight
-
 # Other requirements
 pip install -r requirements.txt
 ```
+# SUMO
+see SUMO installation [here]https://github.com/beedrill/gym_trafficlight
 
 ## Docker
 
-Install docker [here](https)://www.docker.com/)and run the following commands :
+Install docker [here](https://www.docker.com/) and run the following commands :
 
 
 ### CPU
@@ -59,7 +58,7 @@ docker run -it --name rltl_baselines_gpu -e SUMO_HOME='/home/sumo' -e OPENAI_LOG
 
 ## Training
 
-To train with default arguments (see `bash main.py --help ` to see or `a2c_ppo_acktr/arguments.py`)
+To train with default arguments (see `main.py --help ` to see or `a2c_ppo_acktr/arguments.py`)
  
 ```bash
 python3 main.py
