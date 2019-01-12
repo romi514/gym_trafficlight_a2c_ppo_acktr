@@ -1,9 +1,4 @@
-
-# Current bug: observation has 10 parameters ? check in envs
-# + when pushing to rollour, actions is [2,1,1] for a [2,1] tensor
-
 import copy
-import glob
 import os
 import time
 from collections import deque
@@ -11,8 +6,6 @@ from collections import deque
 import gym
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from a2c_ppo_acktr import algo
@@ -21,7 +14,7 @@ from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import update_linear_schedule
-from a2c_ppo_acktr.visualize import visdom_plot
+from a2c_ppo_acktr.visualize import visualize
 
 
 ENV_ID = 'TrafficLight-v0'
@@ -50,12 +43,6 @@ if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
 def main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
-
-    ## Setup visualizer
-    # if args.vis:
-    #     from visdom import Visdom
-    #     viz = Visdom(port=args.port)
-    viz = None
 
     ## Make environments / ENV_ID hardcoded
     envs = make_vec_envs(args.seed, args.num_processes, device, False)
@@ -89,7 +76,8 @@ def main():
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
 
-    episode_rewards = deque(maxlen=10)
+    # Last 20 rewards - can set different queue length for different averaging
+    episode_rewards = deque(maxlen=args.num_steps)
     reward_track = []
     start = time.time()
 
@@ -122,7 +110,6 @@ def main():
             obs, reward, done, _ = envs.step(action)
             episode_rewards.append(reward.numpy())
 
-            print(done)
             # Masks the processes which are done
             masks = torch.FloatTensor([[0.0] if done_ else [1.0]
                                        for done_ in done])
@@ -164,9 +151,11 @@ def main():
 
         total_num_steps = (j + 1) * args.num_processes * args.num_steps
 
-        reward_track.append(np.mean(episode_rewards))
+        if args.vis:
+            # Add the average reward of update to reward tracker
+            reward_track.append(np.mean(episode_rewards))
 
-        ## Log progress (doesn't log losses here)
+        ## Log progress
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             end = time.time()
             print("Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.3f}/{:.3f}, min/max reward {:.3f}/{:.3f}\n".
@@ -176,8 +165,7 @@ def main():
                        np.mean(episode_rewards),
                        np.median(episode_rewards),
                        np.min(episode_rewards),
-                       np.max(episode_rewards), dist_entropy,
-                       value_loss, action_loss))
+                       np.max(episode_rewards), dist_entropy))
 
         ## Evaluate model on new environments for 10 rewards
         if (args.eval_interval is not None
@@ -210,17 +198,10 @@ def main():
             print(" Evaluation using {} episodes: mean reward {:.5f}\n".
                 format(len(eval_episode_rewards),
                        np.mean(eval_episode_rewards)))
-
-
-    np.save("results",reward_track)
     
-    ## Visualize mean_reward (over num_steps) over time 
+    ## Visualize tracked rewards(over num_steps) over time 
     if args.vis:
-        try:
-            #win = visdom_plot(viz, reward_track, args.algo, num_updates)
-            visdom_plot(viz, reward_track, args.algo, num_updates)
-        except IOError:
-            pass
+        visualize(reward_track, args.algo)
 
 
 if __name__ == "__main__":

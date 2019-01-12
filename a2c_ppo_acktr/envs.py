@@ -49,22 +49,11 @@ class VecPyTorch(VecEnvWrapper):
         """Return only every `skip`-th frame"""
         super(VecPyTorch, self).__init__(venv)
         self.device = device
-        # TODO: Fix data types
 
     def reset(self):
         obs = self.venv.reset()
         obs = np.squeeze(obs, axis=1)
         obs = torch.from_numpy(obs).float().to(self.device)
-
-        print("RESET\n")
-        print("RESET\n")
-        print("RESET\n")
-        print("RESET\n")
-        print("RESET\n")
-        print("RESET\n")
-
-
-
         return obs
 
     def step_async(self, actions):

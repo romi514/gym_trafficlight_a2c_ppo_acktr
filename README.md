@@ -38,7 +38,7 @@ pip install -e .
 # Other requirements
 pip install -r requirements.txt
 ```
-# SUMO
+### SUMO
 see SUMO installation [here]https://github.com/beedrill/gym_trafficlight
 
 ## Docker
@@ -50,7 +50,7 @@ Install docker [here](https://www.docker.com/) and run the following commands :
 ```bash
 docker run -it --name rltl_baselines -e SUMO_HOME='/home/sumo' -e OPENAI_LOGDIR='/home/training_logs' -e OPENAI_LOG_FORMAT='stdout,csv,tensorboard' -v /path/to/package/gym_trafficlight:/home/gym_trafficlight -v /path/to/package/baselines:/home/baselines -v /path/to/package/gym_trafficlight_a2c_ppo_acktr:/home/gym_trafficlight_a2c_ppo_acktr  beedrill/rltl-docker:cpu-py3 /bin/bash
 ```
-### GPU (not tested)
+### GPU (not tested) - with torch.cuda
 
 ```bash
 docker run -it --name rltl_baselines_gpu -e SUMO_HOME='/home/sumo' -e OPENAI_LOGDIR='/home/training_logs' -e OPENAI_LOG_FORMAT='stdout,csv,tensorboard' -v /path/to/package/gym_trafficlight:/home/gym_trafficlight -v /path/to/package/baselines:/home/baselines -v /path/to/package/gym_trafficlight_a2c_ppo_acktr:/home/a2c  beedrill/rltl-docker:gpu-py3 /bin/bash
