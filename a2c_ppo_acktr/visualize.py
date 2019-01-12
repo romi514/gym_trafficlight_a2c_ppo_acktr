@@ -4,18 +4,26 @@ import numpy as np
 matplotlib.rcParams.update({'font.size': 8})
 
 
-def visualize(rewards, algo):
+def visualize(rewards, algo, n=400):
 
     num_updates = len(rewards)
+    if n > num_updates:
+        n = num_updates
+
+    if num_updates%n != 0
+        rewards = rewards[:-(num_updates%n)-1]
+
+    sectioned_rew = np.reshape(rewards,(n,int(num_updates/n)))
+    means = np.mean(sectioned_rew,axis=1)
+
     fig = plt.figure()
 
-    tx = np.arange(num_updates)    
-    plt.plot(tx, rewards, label="{}".format(algo))
+    plt.plot(np.arange(n), means,label="means")
 
-    plt.xlim(0,  num_updates+1)
+    plt.xlim(0,  n+1)
 
-    plt.xlabel('Number of Timesteps')
-    plt.ylabel('Average Rewards')
+    plt.xlabel('Number of updates (x{})'.format(int(num_updates/n)))
+    plt.ylabel("Average Rewards over {} updates".format(int(num_updates/n)))
 
     plt.title("TrafficLight-v0")
     plt.legend(loc=4)
