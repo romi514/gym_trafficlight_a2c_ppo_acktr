@@ -13,12 +13,10 @@ def main():
 
     args = get_args()
 
-    try:
-        actor_critic = torch.load(args.model_path)
-    except FileNotFoundError:
-        print("No file with such name found")
+    actor_critic = torch.load(args.model_path)
+        
 
-    eval_envs = make_vec_envs(seed + num_processes, num_processes, device, True, visaul = True)
+    eval_envs = make_vec_envs(seed + num_processes, num_processes, device, True, visual = True)
 
     eval_episode_rewards = []
 

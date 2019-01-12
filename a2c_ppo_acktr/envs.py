@@ -9,7 +9,7 @@ from baselines import bench
 from baselines.common.vec_env import VecEnvWrapper
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
-from gym_trafficlight.wrappers import  TrafficParameterSetWrapper
+from gym_trafficlight.wrappers.visualization_wrapper import  TrafficVisualizationWrapper
 
 
 def make_env(seed, rank, allow_early_resets,visual):
@@ -63,7 +63,7 @@ class VecPyTorch(VecEnvWrapper):
     def step_wait(self):
         obs, reward, done, info = self.venv.step_wait()        
         obs = np.squeeze(obs, axis=1)
-        reward = np.squeeze(reward, axis=1)
+        #reward = np.squeeze(reward, axis=1)
         obs = torch.from_numpy(obs).float().to(self.device)
         reward = torch.from_numpy(reward).unsqueeze(dim=1).float()
         return obs, reward, done, info
