@@ -9,21 +9,27 @@ from baselines import bench
 from baselines.common.vec_env import VecEnvWrapper
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
+from gym_trafficlight.wrappers import  TrafficParameterSetWrapper
 
-def make_env(seed, rank, allow_early_resets):
+
+def make_env(seed, rank, allow_early_resets,visual):
     def _thunk():
 
         env = gym.make('TrafficLight-v0')
         env.seed(seed + rank)
+
+        if visual:
+            # env = TrafficParameterSetWrapper(env, args).unwrapped (to use of params are to pass down to env creation)
+            env = TrafficVisualizationWrapper(env).unwrapped
         return env
 
     return _thunk
 
 # Make a vector of environments (one for each process)
-def make_vec_envs(seed, num_processes, gamma,
-                  device, allow_early_resets, num_frame_stack=None):
+def make_vec_envs(seed, num_processes,
+                  device, allow_early_resets, num_frame_stack=None,visual=False):
 
-    envs = [make_env(seed, i, allow_early_resets)
+    envs = [make_env(seed, i, allow_early_resets,visual)
             for i in range(num_processes)]
 
     # Choose wrapper 

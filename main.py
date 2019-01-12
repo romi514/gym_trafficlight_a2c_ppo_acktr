@@ -58,8 +58,7 @@ def main():
     viz = None
 
     ## Make environments / ENV_ID hardcoded
-    envs = make_vec_envs(args.seed, args.num_processes,
-                        args.gamma, device, False)
+    envs = make_vec_envs(args.seed, args.num_processes, device, False)
 
     ## Setup Policy / network architecture
     actor_critic = Policy(envs.observation_space.shape, envs.action_space, args.recurrent_policy)
@@ -184,8 +183,7 @@ def main():
         if (args.eval_interval is not None
                 and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
-            eval_envs = make_vec_envs(args.seed + args.num_processes, args.num_processes,
-                args.gamma, device, True)
+            eval_envs = make_vec_envs(args.seed + args.num_processes, args.num_processes, device, True)
 
             eval_episode_rewards = []
 
