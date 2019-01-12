@@ -100,5 +100,4 @@ venv.bak/
 # mkdocs documentation
 /site
 
-trained_models/
 .fuse_hidden*
