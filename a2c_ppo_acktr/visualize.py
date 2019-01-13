@@ -10,7 +10,7 @@ def visualize(rewards, algo, n=400):
     if n > num_updates:
         n = num_updates
 
-    if num_updates%n != 0
+    if num_updates%n != 0:
         rewards = rewards[:-(num_updates%n)-1]
 
     sectioned_rew = np.reshape(rewards,(n,int(num_updates/n)))
