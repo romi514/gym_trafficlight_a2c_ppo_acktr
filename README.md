@@ -59,6 +59,7 @@ docker run -it --name rltl_baselines_gpu -e SUMO_HOME='/home/sumo' -e OPENAI_LOG
 ## Training
 
 To train with default arguments (see `main.py --help ` to see or `a2c_ppo_acktr/arguments.py`)
+Use --vis to create average reward evolution plot
  
 ```bash
 python3 main.py
