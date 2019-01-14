@@ -198,8 +198,8 @@ def main():
             print(" Evaluation using {} episodes: mean reward {:.5f}\n".
                 format(len(eval_episode_rewards),
                        np.mean(eval_episode_rewards)))
-    
-    ## Visualize tracked rewards(over num_steps) over time 
+
+    ## Visualize tracked rewards(over num_steps) over time
     if args.vis:
         visualize(reward_track, args.algo)
 
