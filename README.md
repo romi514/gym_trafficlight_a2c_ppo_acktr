@@ -82,7 +82,12 @@ if it print out 0, you are good to go.
 ## Training
 
 To train with default arguments (see `main.py --help ` to see or `a2c_ppo_acktr/arguments.py`)
+<<<<<<< HEAD
 
+=======
+Use --vis to create average reward evolution plot
+ 
+>>>>>>> master
 ```bash
 python3 main.py
 ```
