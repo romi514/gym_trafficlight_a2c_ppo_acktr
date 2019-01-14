@@ -104,3 +104,4 @@ venv.bak/
 
 #created models
 trained_models/
+*.pt
