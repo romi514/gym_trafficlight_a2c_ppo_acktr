@@ -32,7 +32,7 @@ def make_vec_envs(seed, num_processes,
     envs = [make_env(seed, i, allow_early_resets,visual)
             for i in range(num_processes)]
 
-    # Choose wrapper 
+    # Choose wrapper
     if len(envs) > 1:
         envs = SubprocVecEnv(envs)
     else:
@@ -57,11 +57,12 @@ class VecPyTorch(VecEnvWrapper):
         return obs
 
     def step_async(self, actions):
-        actions = actions.squeeze(1).cpu().numpy()
+        #actions = actions.squeeze(1).cpu().numpy()
+        actions = actions.cpu().numpy()
         self.venv.step_async(actions)
 
     def step_wait(self):
-        obs, reward, done, info = self.venv.step_wait()        
+        obs, reward, done, info = self.venv.step_wait()
         obs = np.squeeze(obs, axis=1)
         if reward.ndim > 1:
             reward = np.squeeze(reward, axis=1)
