@@ -83,10 +83,21 @@ if it print out 0, you are good to go.
 
 To train with default arguments (see `main.py --help ` to see or `a2c_ppo_acktr/arguments.py`)
 
+###A2C (default)
+
 ```bash
-python3 main.py
+python3 main.py --vis
 ```
-A2C is the algorithm running by default
+
+### PPO
+```bash
+python3 main.py --num-env-steps 1000000 --num-processes 4 --algo ppo --vis --clip-param 0.1 
+```
+
+###ACKTR
+```bash
+python3 main.py --num-env-steps 1000000 --algo acktr --vis
+```
 
 ## Evaluation
 

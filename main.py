@@ -13,7 +13,7 @@ from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
-from a2c_ppo_acktr.utils import update_linear_schedule
+from a2c_ppo_acktr.utils import update_linear_schedule, get_time, save_params
 from a2c_ppo_acktr.visualize import visualize
 
 
@@ -31,6 +31,10 @@ if args.recurrent_policy:
 ## Number of epochs / updates  -----  num_steps is num of episodes before update
 num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
 
+# Set observation_space shapes
+occ_obs_shape = (4,125)
+sign_obs_shape = 10
+
 ## Initialize all seeds
 torch.manual_seed(args.seed)
 torch.cuda.manual_seed_all(args.seed)
@@ -40,15 +44,25 @@ if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
+# Generate save_path
+if args.save_dir != "":
+    save_path = os.path.join(args.save_dir, args.algo, get_time())
+    try:
+        os.makedirs(save_path)
+    except OSError:
+        pass
+    save_params(args, os.path.join(save_path, ENV_ID + ".txt"))
+
+
 def main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
     ## Make environments / ENV_ID hardcoded
-    envs = make_vec_envs(args.seed, args.num_processes, device, False)
+    envs = make_vec_envs(args.seed, args.num_processes,args.state_rep, device, False)
 
     ## Setup Policy / network architecture
-    actor_critic = Policy(envs.observation_space.shape, envs.action_space, args.recurrent_policy)
+    actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
     actor_critic.to(device)
 
     ## Choose algorithm to use
@@ -68,12 +82,14 @@ def main():
 
     ## Initiate memory buffer
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
-                        envs.observation_space.shape, envs.action_space,
+                        occ_obs_shape, sign_obs_shape, envs.action_space,
                         actor_critic.recurrent_hidden_state_size)
 
     ## Start env with first observation
-    obs = envs.reset()
-    rollouts.obs[0].copy_(obs)
+    occ_obs, sign_obs = envs.reset()
+    if args.state_rep == 'full':
+        rollouts.occ_obs[0].copy_(occ_obs)
+    rollouts.sign_obs[0].copy_(sign_obs)
     rollouts.to(device)
 
     # Last 20 rewards - can set different queue length for different averaging
@@ -102,12 +118,12 @@ def main():
             with torch.no_grad():
                 # Pass observation through network and get outputs
                 value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
-                        rollouts.obs[step],
+                        rollouts.occ_obs[step], rollouts.sign_obs[step],
                         rollouts.recurrent_hidden_states[step],
                         rollouts.masks[step])
 
             # Do action in environment and save reward
-            obs, reward, done, _ = envs.step(action)
+            occ_obs, sign_obs, reward, done, _ = envs.step(action)
             episode_rewards.append(reward.numpy())
 
             # Masks the processes which are done
@@ -115,14 +131,13 @@ def main():
                                        for done_ in done])
 
             # Insert step information in buffer
-            rollouts.insert(obs, recurrent_hidden_states, action, action_log_prob, value, reward, masks)
+            rollouts.insert(occ_obs, sign_obs, recurrent_hidden_states, action, action_log_prob, value, reward, masks)
 
         ## Get state value of current env state
         with torch.no_grad():
-            next_value = actor_critic.get_value(rollouts.obs[-1],
+            next_value = actor_critic.get_value(rollouts.occ_obs[-1], rollouts.sign_obs[-1],
                                                 rollouts.recurrent_hidden_states[-1],
                                                 rollouts.masks[-1]).detach()
-
 
         ## Computes the num_step return (next_value approximates reward after num_step) see Supp Material of https://arxiv.org/pdf/1804.02717.pdf
         ## Can use Generalized Advantage Estimation
@@ -136,11 +151,6 @@ def main():
 
         ## Save model after each save_interval
         if (j % args.save_interval == 0 or j == num_updates - 1) and args.save_dir != "":
-            save_path = os.path.join(args.save_dir, args.algo)
-            try:
-                os.makedirs(save_path)
-            except OSError:
-                pass
 
             # A really ugly way to save a model to CPU
             save_model = actor_critic
@@ -171,22 +181,22 @@ def main():
         if (args.eval_interval is not None
                 and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
-            eval_envs = make_vec_envs(args.seed + args.num_processes, args.num_processes, device, True)
+            eval_envs = make_vec_envs(args.seed + args.num_processes, args.num_processes, args.state_rep, device, True)
 
             eval_episode_rewards = []
 
-            obs = eval_envs.reset()
+            occ_obs, sign_obs = eval_envs.reset()
             eval_recurrent_hidden_states = torch.zeros(args.num_processes,
                             actor_critic.recurrent_hidden_state_size, device=device)
             eval_masks = torch.zeros(args.num_processes, 1, device=device)
 
             while len(eval_episode_rewards) < 10:
                 with torch.no_grad():
-                    _, action, _, eval_recurrent_hidden_states = actor_critic.act(
-                        obs, eval_recurrent_hidden_states, eval_masks, deterministic=True)
+                    _, _, action, _, eval_recurrent_hidden_states = actor_critic.act(
+                        occ_obs, sign_obs, eval_recurrent_hidden_states, eval_masks, deterministic=True)
 
                 # Obser reward and next obs
-                obs, reward, done, infos = eval_envs.step(action)
+                occ_obs, sign_obs, reward, done, infos = eval_envs.step(action)
 
                 eval_masks = torch.FloatTensor([[0.0] if done_ else [1.0]
                                                 for done_ in done])

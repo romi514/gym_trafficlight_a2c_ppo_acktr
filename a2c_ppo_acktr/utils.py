@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import time
+import datetime
 
 # Get a render function
 def get_render_func(venv):
@@ -37,3 +39,26 @@ def init(module, weight_init, bias_init, gain=1):
     weight_init(module.weight.data, gain=gain)
     bias_init(module.bias.data)
     return module
+
+def get_time():
+    ts = time.time()
+    return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H.%M.%S')
+
+def save_params(args, file):
+    f = open(file, 'a')
+    f.write('#################################\n')
+    for key in vars(args):
+        value = getattr(args, key)
+        if value is None:
+            value = "None"
+        if isinstance(value,bool):
+            value = str(value)
+        f.write('{:<20}\t{:<20}\n'.format(key,value))
+    f.write('#################################\n')
+    f.close()
+
+
+
+
+
+

@@ -10,13 +10,15 @@ from baselines.common.vec_env import VecEnvWrapper
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
 from gym_trafficlight.wrappers.visualization_wrapper import  TrafficVisualizationWrapper
+from gym_trafficlight.wrappers import  TrafficParameterSetWrapper
 
-
-def make_env(seed, rank, allow_early_resets,visual):
+def make_env(seed, rank, state_rep, allow_early_resets,visual):
     def _thunk():
 
         env = gym.make('TrafficLight-v0')
         env.seed(seed + rank)
+
+        env = TrafficParameterSetWrapper(env, {"state_representation" : state_rep}).unwrapped
 
         if visual:
             # env = TrafficParameterSetWrapper(env, args).unwrapped (to use of params are to pass down to env creation)
@@ -26,10 +28,10 @@ def make_env(seed, rank, allow_early_resets,visual):
     return _thunk
 
 # Make a vector of environments (one for each process)
-def make_vec_envs(seed, num_processes,
+def make_vec_envs(seed, num_processes,state_rep,
                   device, allow_early_resets, num_frame_stack=None,visual=False):
 
-    envs = [make_env(seed, i, allow_early_resets,visual)
+    envs = [make_env(seed, i, state_rep,allow_early_resets,visual)
             for i in range(num_processes)]
 
     # Choose wrapper
@@ -39,22 +41,37 @@ def make_vec_envs(seed, num_processes,
         envs = DummyVecEnv(envs)
 
     # Choose another wrapper
-    envs = VecPyTorch(envs, device)
+    envs = VecPyTorch(envs, state_rep, device)
 
     return envs
 
 
 class VecPyTorch(VecEnvWrapper):
-    def __init__(self, venv, device):
+    def __init__(self, venv, state_rep, device):
         """Return only every `skip`-th frame"""
         super(VecPyTorch, self).__init__(venv)
         self.device = device
+        self.state_rep = state_rep
+
+    def _convert_raw_obs(self, obs):
+
+        obs = np.squeeze(obs,axis=1)
+        if self.state_rep == "full":
+            occ_obs = np.asarray([np.asarray(occ) for occ in obs[:,0]])
+            occ_obs = torch.from_numpy(occ_obs).float().to(self.device)
+
+            sign_obs = np.asarray([np.asarray(sign) for sign in obs[:,1]])
+            sign_obs = torch.from_numpy(sign_obs).float().to(self.device)
+
+            return occ_obs , sign_obs
+        else :
+            obs = torch.from_numpy(obs).float().to(self.device)
+            return None , obs
 
     def reset(self):
-        obs = self.venv.reset()
-        obs = np.squeeze(obs, axis=1)
-        obs = torch.from_numpy(obs).float().to(self.device)
-        return obs
+
+        obs = self.venv.reset()        
+        return self._convert_raw_obs(obs)        
 
     def step_async(self, actions):
         #actions = actions.squeeze(1).cpu().numpy()
@@ -63,9 +80,11 @@ class VecPyTorch(VecEnvWrapper):
 
     def step_wait(self):
         obs, reward, done, info = self.venv.step_wait()
-        obs = np.squeeze(obs, axis=1)
         if reward.ndim > 1:
             reward = np.squeeze(reward, axis=1)
-        obs = torch.from_numpy(obs).float().to(self.device)
         reward = torch.from_numpy(reward).unsqueeze(dim=1).float()
-        return obs, reward, done, info
+        occ_obs, sign_obs = self._convert_raw_obs(obs)
+        return occ_obs, sign_obs, reward, done, info
+
+
+

@@ -11,7 +11,7 @@ def visualize(rewards, algo, n=400):
         n = num_updates
 
     if num_updates%n != 0:
-        rewards = rewards[:-(num_updates%n)-1]
+        rewards = rewards[:-(num_updates%n)]
 
     sectioned_rew = np.reshape(rewards,(n,int(num_updates/n)))
     means = np.mean(sectioned_rew,axis=1)

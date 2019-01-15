@@ -35,10 +35,10 @@ def get_args():
                         help='number of forward steps (default: 20)')
     parser.add_argument('--ppo-epoch', type=int, default=4,
                         help='number of ppo epochs (default: 4)')
-    parser.add_argument('--num-mini-batch', type=int, default=32,
-                        help='number of batches for ppo (default: 32)')
-    parser.add_argument('--clip-param', type=float, default=0.2,
-                        help='ppo clip parameter (default: 0.2)')
+    parser.add_argument('--num-mini-batch', type=int, default=16,
+                        help='number of batches for ppo (default: 16)')
+    parser.add_argument('--clip-param', type=float, default=0.1,
+                        help='ppo clip parameter (default: 0.1)')
     parser.add_argument('--log-interval', type=int, default=50,
                         help='log interval, one log per n updates (default: 50)')
     parser.add_argument('--save-interval', type=int, default=1000,
@@ -62,7 +62,9 @@ def get_args():
     parser.add_argument('--vis', action='store_true', default=False,
                         help='saves and visualizes average reward over time')
     parser.add_argument('--port', type=int, default=8097,
-                        help='port to run the server on (default: 8097) - not used')
+                        help='port to run the server on (default: 8097)')
+    parser.add_argument('--state-rep', default='sign',
+                        help='state representation used : full, occ, or sign (default: sign)')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

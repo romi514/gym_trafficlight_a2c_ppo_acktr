@@ -31,13 +31,14 @@ class A2C_ACKTR():
                 actor_critic.parameters(), lr, eps=eps, alpha=alpha)
 
     def update(self, rollouts):
-        obs_shape = rollouts.obs.size()[2:]
+        occ_obs_shape = rollouts.occ_obs.size()[2:]
+        sign_obs_shape = rollouts.sign_obs.size()[2:]
         action_shape = rollouts.actions.size()[-1]
         num_steps, num_processes, _ = rollouts.rewards.size()
 
         # For each observation of the trajectory, evaluate the state value and action_probs
         values, action_log_probs, dist_entropy, _ = self.actor_critic.evaluate_actions(
-            rollouts.obs[:-1].view(-1, *obs_shape),
+            rollouts.occ_obs[:-1].view(-1, *occ_obs_shape),rollouts.sign_obs[:-1].view(-1, *sign_obs_shape),
             rollouts.recurrent_hidden_states[0].view(-1, self.actor_critic.recurrent_hidden_state_size),
             rollouts.masks[:-1].view(-1, 1),
             rollouts.actions.view(-1, action_shape))
@@ -54,7 +55,6 @@ class A2C_ACKTR():
         # Compute action loss ( why the detach here ?)
         action_loss = -(advantages.detach() * action_log_probs).mean()
 
-        # _____ Didn't study ______
         if self.acktr and self.optimizer.steps % self.optimizer.Ts == 0:
             # Sampled fisher, see Martens 2014
             self.actor_critic.zero_grad()
