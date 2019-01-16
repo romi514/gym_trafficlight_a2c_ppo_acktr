@@ -1,10 +1,12 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
 matplotlib.rcParams.update({'font.size': 8})
 
 
-def visualize(rewards, algo, n=400):
+def visualize(rewards, algo, save_path, n=400):
 
     num_updates = len(rewards)
     if n > num_updates:
@@ -30,7 +32,7 @@ def visualize(rewards, algo, n=400):
     plt.show()
     plt.draw()
 
-    plt.savefig("./reward_results/test_fig.png")
+    plt.savefig(os.path.join(save_path,'average_rewards.png'))
 
 if __name__ == "__main__":
     rewards = np.load("results.npy")

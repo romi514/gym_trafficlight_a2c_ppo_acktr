@@ -211,7 +211,7 @@ def main():
 
     ## Visualize tracked rewards(over num_steps) over time
     if args.vis:
-        visualize(reward_track, args.algo)
+        visualize(reward_track, args.algo, save_path)
 
 
 if __name__ == "__main__":
