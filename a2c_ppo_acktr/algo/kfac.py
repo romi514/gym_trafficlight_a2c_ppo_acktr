@@ -14,48 +14,36 @@ from a2c_ppo_acktr.utils import AddBias
 
 
 def _extract_patches(x, kernel_size, stride, padding):
-    if padding[0] + padding[1] > 0:
-        x = F.pad(x, (padding[1], padding[1], padding[0],
-                      padding[0])).data  # Actually check dims
-    x = x.unfold(2, kernel_size[0], stride[0])
-    x = x.unfold(3, kernel_size[1], stride[1])
-    x = x.transpose_(1, 2).transpose_(2, 3).contiguous()
-    x = x.view(
-        x.size(0), x.size(1), x.size(2),
-        x.size(3) * x.size(4) * x.size(5))
+    if padding[0] > 0:
+        x = F.pad(x, (padding[0], padding[0])).data # Pad input (last dim right and left)
+    x = x.unfold(2, kernel_size[0], stride[0]) # (40,1,125) -> (40,1,120,6)
+    x = x.transpose_(1, 2).contiguous()
+    x = x.view(x.size(0), x.size(1), x.size(2)*x.size(3))
     return x
 
 
-def compute_cov_a(a, classname, layer_info, fast_cnn):
+def compute_cov_a(a, classname, layer_info):
     batch_size = a.size(0)
-
-    if classname == 'Conv2d':
-        if fast_cnn:
-            a = _extract_patches(a, *layer_info)
-            a = a.view(a.size(0), -1, a.size(-1))
-            a = a.mean(1)
-        else:
-            a = _extract_patches(a, *layer_info)
-            a = a.view(-1, a.size(-1)).div_(a.size(1)).div_(a.size(2))
+    if classname == 'Conv1d':
+        a = _extract_patches(a, *layer_info).contiguous()
+        a = a.view(-1, a.size(-1)).div_(a.size(1)) # (40*120,6) and divides by 120
     elif classname == 'AddBias':
         is_cuda = a.is_cuda
-        a = torch.ones(a.size(0), 1)
+        a = torch.ones(batch_size, 1)
         if is_cuda:
             a = a.cuda()
 
     return a.t() @ (a / batch_size)
 
 
-def compute_cov_g(g, classname, layer_info, fast_cnn):
+def compute_cov_g(g, classname, layer_info):
     batch_size = g.size(0)
 
-    if classname == 'Conv2d':
-        if fast_cnn:
-            g = g.view(g.size(0), g.size(1), -1)
-            g = g.sum(-1)
-        else:
-            g = g.transpose(1, 2).transpose(2, 3).contiguous()
-            g = g.view(-1, g.size(-1)).mul_(g.size(1)).mul_(g.size(2))
+    #print(g.size()) # (40,1,25)
+
+    if classname == 'Conv1d':
+        g = g.transpose(1, 2).contiguous()
+        g = g.view(-1, g.size(-1)).mul_(g.size(1))
     elif classname == 'AddBias':
         g = g.view(g.size(0), g.size(1), -1)
         g = g.sum(-1)
@@ -93,7 +81,6 @@ class KFACOptimizer(optim.Optimizer):
                  kl_clip=0.001,
                  damping=1e-2,
                  weight_decay=0,
-                 fast_cnn=False,
                  Ts=1,
                  Tf=10):
         defaults = dict()
@@ -109,7 +96,7 @@ class KFACOptimizer(optim.Optimizer):
 
         super(KFACOptimizer, self).__init__(model.parameters(), defaults)
 
-        self.known_modules = {'Linear', 'Conv2d', 'AddBias'}
+        self.known_modules = {'Linear', 'Conv1d', 'AddBias'}
 
         self.modules = []
         self.grad_outputs = {}
@@ -131,8 +118,6 @@ class KFACOptimizer(optim.Optimizer):
         self.damping = damping
         self.weight_decay = weight_decay
 
-        self.fast_cnn = fast_cnn
-
         self.Ts = Ts
         self.Tf = Tf
 
@@ -145,12 +130,10 @@ class KFACOptimizer(optim.Optimizer):
         if torch.is_grad_enabled() and self.steps % self.Ts == 0:
             classname = module.__class__.__name__
             layer_info = None
-            if classname == 'Conv2d':
+            if classname == 'Conv1d':
                 layer_info = (module.kernel_size, module.stride,
                               module.padding)
-
-            aa = compute_cov_a(input[0].data, classname, layer_info,
-                               self.fast_cnn)
+            aa = compute_cov_a(input[0].data, classname, layer_info)
 
             # Initialize buffers
             if self.steps == 0:
@@ -163,13 +146,11 @@ class KFACOptimizer(optim.Optimizer):
         if self.acc_stats:
             classname = module.__class__.__name__
             layer_info = None
-            if classname == 'Conv2d':
+            if classname == 'Conv1d':
                 layer_info = (module.kernel_size, module.stride,
                               module.padding)
 
-            gg = compute_cov_g(grad_output[0].data, classname, layer_info,
-                               self.fast_cnn)
-
+            gg = compute_cov_g(grad_output[0].data, classname, layer_info)
             # Initialize buffers
             if self.steps == 0:
                 self.m_gg[module] = gg.clone()
@@ -180,7 +161,7 @@ class KFACOptimizer(optim.Optimizer):
         for module in self.model.modules():
             classname = module.__class__.__name__
             if classname in self.known_modules:
-                assert not ((classname in ['Linear', 'Conv2d']) and module.bias is not None), \
+                assert not ((classname in ['Linear', 'Conv1d']) and module.bias is not None), \
                                     "You must have a bias as a separate layer"
 
                 self.modules.append(module)
@@ -203,8 +184,6 @@ class KFACOptimizer(optim.Optimizer):
             la = self.damping + self.weight_decay
 
             if self.steps % self.Tf == 0:
-                # My asynchronous implementation exists, I will add it later.
-                # Experimenting with different ways to this in PyTorch.
                 self.d_a[m], self.Q_a[m] = torch.symeig(
                     self.m_aa[m], eigenvectors=True)
                 self.d_g[m], self.Q_g[m] = torch.symeig(
@@ -213,8 +192,9 @@ class KFACOptimizer(optim.Optimizer):
                 self.d_a[m].mul_((self.d_a[m] > 1e-6).float())
                 self.d_g[m].mul_((self.d_g[m] > 1e-6).float())
 
-            if classname == 'Conv2d':
+            if classname == 'Conv1d':
                 p_grad_mat = p.grad.data.view(p.grad.data.size(0), -1)
+
             else:
                 p_grad_mat = p.grad.data
 

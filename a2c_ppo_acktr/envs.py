@@ -70,7 +70,7 @@ class VecPyTorch(VecEnvWrapper):
 
     def reset(self):
 
-        obs = self.venv.reset()        
+        obs = self.venv.reset()
         return self._convert_raw_obs(obs)        
 
     def step_async(self, actions):
@@ -85,6 +85,4 @@ class VecPyTorch(VecEnvWrapper):
         reward = torch.from_numpy(reward).unsqueeze(dim=1).float()
         occ_obs, sign_obs = self._convert_raw_obs(obs)
         return occ_obs, sign_obs, reward, done, info
-
-
 

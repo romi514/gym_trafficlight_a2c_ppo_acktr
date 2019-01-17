@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import time
 
 from a2c_ppo_acktr.distributions import Categorical, DiagGaussian, Bernoulli
 from a2c_ppo_acktr.utils import init
@@ -16,13 +17,12 @@ class Policy(nn.Module):
     def __init__(self, occ_obs_shape, sign_obs_shape, state_rep, action_space, recurrent_policy):
         super(Policy, self).__init__()
 
-        if state_rep == 'sign':
+        if state_rep in ['sign','original']:
             self.base = MLPBase(sign_obs_shape, recurrent_policy)
         elif state_rep == 'full':
             self.base = CNNBase(occ_obs_shape, sign_obs_shape, recurrent_policy)
         else:
-            raise NotImplemented('Only implemented sign and full state representation')
-
+            raise NotImplemented('Only implemented sign, origianal, and full state representation')
 
         num_outputs = action_space.n # 2
         self.dist = Categorical(self.base.output_size, num_outputs)
@@ -37,7 +37,9 @@ class Policy(nn.Module):
         return self.base.recurrent_hidden_state_size
 
     def act(self, occ_inputs, sign_inputs, rnn_hxs, masks, deterministic=False): # Not deterministic, chooses actions wrt output probabilities
+
         value, actor_features, rnn_hxs = self.base(occ_inputs, sign_inputs, rnn_hxs, masks)
+
         dist = self.dist(actor_features)
 
         if deterministic:
@@ -172,12 +174,29 @@ class CNNBase(NNBase):
             nn.init.calculate_gain('relu'))
 
 
-        self.lanes = nn.Sequential(
-            init_(nn.Conv1d(4,8,6,stride=1,groups=4)), #(4,125) -> (8,120)
-            nn.ReLU(),nn.MaxPool1d(4),                 #(8,120) -> (8,30)
-            init_(nn.Conv1d(8,4,6,stride=1,groups=4)), #(8,30) -> (4,25)
-            nn.ReLU(),nn.MaxPool1d(5),                 #(4,25) -> (4,5)
-            Flatten()                                  #(4,5) -> (1,20)
+        self.lane1 = nn.Sequential(
+            init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
+            nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
+            init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
+            nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
+        )
+        self.lane2 = nn.Sequential(
+            init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
+            nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
+            init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
+            nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
+        )
+        self.lane3 = nn.Sequential(
+            init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
+            nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
+            init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
+            nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
+        )
+        self.lane4 = nn.Sequential(
+            init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
+            nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
+            init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
+            nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
         )
 
         combined_size = 20 + sign_num_inputs
@@ -206,11 +225,15 @@ class CNNBase(NNBase):
 
     def forward(self, occ_inputs, sign_inputs, rnn_hxs, masks):
         
-        hidden_lanes = self.lanes(occ_inputs)
+        hidden_lanes1 = self.lane1(occ_inputs[:,0,:].unsqueeze(1)).squeeze(1)
+        hidden_lanes2 = self.lane2(occ_inputs[:,1,:].unsqueeze(1)).squeeze(1)
+        hidden_lanes3 = self.lane3(occ_inputs[:,2,:].unsqueeze(1)).squeeze(1)
+        hidden_lanes4 = self.lane4(occ_inputs[:,3,:].unsqueeze(1)).squeeze(1)
 
         #if self.is_recurrent:
         #    x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
-        hidden_input = torch.cat((hidden_lanes,sign_inputs),1)
+
+        hidden_input = torch.cat((hidden_lanes1, hidden_lanes2, hidden_lanes3, hidden_lanes4, sign_inputs),1)
         hidden_critic = self.critic(hidden_input)
         hidden_actor = self.actor(hidden_input)
 

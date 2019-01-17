@@ -64,7 +64,7 @@ def get_args():
     parser.add_argument('--port', type=int, default=8097,
                         help='port to run the server on (default: 8097)')
     parser.add_argument('--state-rep', default='sign',
-                        help='state representation used : full, occ, or sign (default: sign)')
+                        help='state representation used : full, original, or sign (default: sign)')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
