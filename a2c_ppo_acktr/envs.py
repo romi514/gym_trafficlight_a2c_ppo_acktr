@@ -11,28 +11,48 @@ from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
 from gym_trafficlight.wrappers.visualization_wrapper import  TrafficVisualizationWrapper
 from gym_trafficlight.wrappers import  TrafficParameterSetWrapper
+from gym_trafficlight import PenetrationRateManager
 
-def make_env(seed, rank, state_rep, allow_early_resets,visual):
+
+def make_env(args, rank, no_logging):
     def _thunk():
 
-        env = gym.make('TrafficLight-v0')
-        env.seed(seed + rank)
 
-        env = TrafficParameterSetWrapper(env, {"state_representation" : state_rep}).unwrapped
+        env = gym.make(args.env_name)
+        env.seed(args.seed + rank)
 
-        if visual:
-            # env = TrafficParameterSetWrapper(env, args).unwrapped (to use of params are to pass down to env creation)
+        env_args = {}
+        env_args['state_representation'] = args.state_rep
+
+        if not no_logging and not args.no_log_waiting_time:
+            if args.save_dir != "":
+                env_args['log_waiting_time'] = True
+                env_args['record_file'] = os.path.join(args.save_path, "waiting_time_process_"+str(rank+1)+".txt")
+            else:
+                print("No waiting time logging is done because no save file is given")
+
+        if args.penetration_rate == 'linear':
+            prm = PenetrationRateManager(
+                trend = 'linear',
+                transition_time = 3*365, #3 years
+                pr_start = 0.05,
+                pr_end = 1
+                )
+            env_args['reset_manager'] = prm
+
+        env = TrafficParameterSetWrapper(env, env_args).unwrapped
+
+        if args.vis:
             env = TrafficVisualizationWrapper(env).unwrapped
         return env
 
     return _thunk
 
 # Make a vector of environments (one for each process)
-def make_vec_envs(seed, num_processes,state_rep,
-                  device, allow_early_resets, num_frame_stack=None,visual=False):
+def make_vec_envs(args, device, no_logging = False):
 
-    envs = [make_env(seed, i, state_rep,allow_early_resets,visual)
-            for i in range(num_processes)]
+    envs = [make_env(args, i, no_logging)
+            for i in range(args.num_processes)]
 
     # Choose wrapper
     if len(envs) > 1:
@@ -41,7 +61,7 @@ def make_vec_envs(seed, num_processes,state_rep,
         envs = DummyVecEnv(envs)
 
     # Choose another wrapper
-    envs = VecPyTorch(envs, state_rep, device)
+    envs = VecPyTorch(envs, args.state_rep, device)
 
     return envs
 

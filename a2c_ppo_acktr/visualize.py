@@ -32,7 +32,8 @@ def visualize(rewards, algo, save_path, n=400):
     plt.show()
     plt.draw()
 
-    plt.savefig(os.path.join(save_path,'average_rewards.png'))
+    if save_path != "":
+        plt.savefig(os.path.join(save_path,'average_rewards.png'))
 
 if __name__ == "__main__":
     rewards = np.load("results.npy")

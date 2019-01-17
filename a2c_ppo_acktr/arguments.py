@@ -65,6 +65,12 @@ def get_args():
                         help='port to run the server on (default: 8097)')
     parser.add_argument('--state-rep', default='sign',
                         help='state representation used : full, original, or sign (default: sign)')
+    parser.add_argument('--env-name', default='TrafficLight-v0',
+                        help='environment name, see gym_trafficlight Readme for list (default:TrafficLight-v0)')
+    parser.add_argument('--penetration-rate', default='constant',
+                        help='penetration rate of environment during training, constant or linear (default:constant)')
+    parser.add_argument('--no-log-waiting-time', action='store_true', default=False,
+                        help='disables logging of env waiting times')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

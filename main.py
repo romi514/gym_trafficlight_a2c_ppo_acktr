@@ -16,10 +16,6 @@ from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import update_linear_schedule, get_time, save_params
 from a2c_ppo_acktr.visualize import visualize
 
-
-ENV_ID = 'TrafficLight-v0'
-ENV_TYPE = 'trafficenvs'
-
 args = get_args()
 
 ## Check if algorithm args are correct
@@ -45,21 +41,23 @@ if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
     torch.backends.cudnn.deterministic = True
 
 # Generate save_path
+save_path = ""
 if args.save_dir != "":
     save_path = os.path.join(args.save_dir, args.algo, get_time())
     try:
         os.makedirs(save_path)
     except OSError:
         pass
-    save_params(args, os.path.join(save_path, ENV_ID + ".txt"))
+    save_params(args, os.path.join(save_path, "parameters.txt"))
+args.save_path = save_path
 
 
 def main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
-    ## Make environments / ENV_ID hardcoded
-    envs = make_vec_envs(args.seed, args.num_processes,args.state_rep, device, False)
+    ## Make environments
+    envs = make_vec_envs(args, device)
 
     ## Setup Policy / network architecture
     actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
@@ -157,7 +155,7 @@ def main():
             if args.cuda:
                 save_model = copy.deepcopy(actor_critic).cpu()
 
-            torch.save(save_model, os.path.join(save_path, ENV_ID + ".pt"))
+            torch.save(save_model, os.path.join(save_path, "model.pt"))
 
         total_num_steps = (j + 1) * args.num_processes * args.num_steps
 
@@ -181,7 +179,7 @@ def main():
         if (args.eval_interval is not None
                 and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
-            eval_envs = make_vec_envs(args.seed + args.num_processes, args.num_processes, args.state_rep, device, True)
+            eval_envs = make_vec_envs(args, device, no_logging = True)
 
             eval_episode_rewards = []
 
