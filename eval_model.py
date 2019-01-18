@@ -1,41 +1,42 @@
 import argparse
 import numpy as np
 import torch
+import os
+
+from argparse import Namespace
 
 from a2c_ppo_acktr.envs import make_vec_envs
 
 
 ### CHANGE EVAL_MODEL -- NOT WORKING AFTER CHANGES
 
-num_processes = 1
-seed = 1
-device = "cpu"
-
 def main():
 
     args = get_args()
 
-    actor_critic = torch.load(args.model_path)
-        
 
-    eval_envs = make_vec_envs(args, device, visual = True)
+    actor_critic = torch.load(os.path.join(args.save_path,"model.pt"))
+    params = load_params(os.path.join(args.save_path,"parameters.txt"))
+    device = torch.device("cuda:0" if params.cuda else "cpu")
+
+    eval_envs = make_vec_envs(params, device, visual = True)
 
     eval_episode_rewards = []
 
-    obs = eval_envs.reset()
+    occ_obs, sign_obs = eval_envs.reset()
 
     # This is used for RNN, not fully implemented yet
-    eval_recurrent_hidden_states = torch.zeros(num_processes,
+    eval_recurrent_hidden_states = torch.zeros(params.num_processes,
                     actor_critic.recurrent_hidden_state_size, device=device)
-    eval_masks = torch.zeros(num_processes, 1, device=device)
+    eval_masks = torch.zeros(params.num_processes, 1, device=device)
 
     while len(eval_episode_rewards) < args.num_steps:
         with torch.no_grad():
             _, action, _, eval_recurrent_hidden_states = actor_critic.act(
-                obs, eval_recurrent_hidden_states, eval_masks, deterministic=True)
+                occ_obs, sign_obs, eval_recurrent_hidden_states, eval_masks, deterministic=True)
 
         # Obser reward and next obs
-        obs, reward, done, infos = eval_envs.step(action)
+        occ_obs, sign_obs, reward, done, infos = eval_envs.step(action)
 
         eval_masks = torch.FloatTensor([[0.0] if done_ else [1.0]
                                         for done_ in done])
@@ -48,12 +49,50 @@ def main():
         format(len(eval_episode_rewards),
                np.mean(eval_episode_rewards)))
 
+def load_params(file_path):
+
+    f = open(file_path,'r')
+    params = Namespace()
+    line = f.readline()
+    while line:
+        if '#' not in line:
+            arg, str_value = tuple(line.split())
+            if str_value == "True":
+                value = True
+                print("true")
+            elif str_value == "False":
+                value = False
+                print("false")
+            elif str_value == "None":
+                value = None
+                print("none")
+            else: 
+                try:
+                    value = int(str_value)
+                    print("int")
+                except ValueError:
+                    try:
+                        value = float(str_value)
+                        print("float")
+                    except ValueError:
+                        value = str_value
+                        print("string")
+
+            vars(params)[arg] = value
+        line = f.readline()
+
+    params.cuda = not params.no_cuda and torch.cuda.is_available()
+
+    return params
+
+
+
 def get_args():
 
     parser = argparse.ArgumentParser(description='eval_RL')
-    parser.add_argument('--model_path', default='./trained_models/a2c/TrafficLight-v0.pt',
-                        help='path of the saved model to evaluate (default: ./trained_models/a2c/TrafficLight-v0.pt')
-    parser.add_argument('--num_steps', type=int, default=500,
+    parser.add_argument('--save-path', default='',
+                        help='path of the saved model to evaluate (default: " ")')
+    parser.add_argument('--num-steps', type=int, default=500,
                         help='number of environment steps to run (default: 500)')
     args = parser.parse_args()
 

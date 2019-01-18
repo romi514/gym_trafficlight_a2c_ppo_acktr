@@ -67,10 +67,14 @@ def get_args():
                         help='state representation used : full, original, or sign (default: sign)')
     parser.add_argument('--env-name', default='TrafficLight-v0',
                         help='environment name, see gym_trafficlight Readme for list (default:TrafficLight-v0)')
-    parser.add_argument('--penetration-rate', default='constant',
+    parser.add_argument('--penetration-type', default='constant',
                         help='penetration rate of environment during training, constant or linear (default:constant)')
     parser.add_argument('--no-log-waiting-time', action='store_true', default=False,
                         help='disables logging of env waiting times')
+    parser.add_argument('--reward-type', default='local',
+                        help='type of reward with regards to penetration : local, parial, global (default: local)') 
+    parser.add_argument('--penetration-rate', type=float, default=1,
+                        help='percentage of detected vehicles (default: 1)') 
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

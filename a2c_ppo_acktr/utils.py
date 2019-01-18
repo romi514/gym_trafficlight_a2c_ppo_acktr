@@ -41,7 +41,7 @@ def init(module, weight_init, bias_init, gain=1):
 
 def get_time():
     ts = time.time()
-    return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H.%M.%S')
+    return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H.%M.%S')
 
 def save_params(args, file):
     f = open(file, 'a')

@@ -23,6 +23,8 @@ def make_env(args, rank, no_logging,visual):
 
         env_args = {}
         env_args['state_representation'] = args.state_rep
+        env_args['reward_type'] = args.reward_type
+        env_args['penetration_rate'] = args.penetration_rate
 
         if not no_logging and not args.no_log_waiting_time:
             if args.save_dir != "":
@@ -31,7 +33,7 @@ def make_env(args, rank, no_logging,visual):
             else:
                 print("No waiting time logging is done because no save file is given")
 
-        if args.penetration_rate == 'linear':
+        if args.penetration_type == 'linear':
             prm = PenetrationRateManager(
                 trend = 'linear',
                 transition_time = 3*365, #3 years
