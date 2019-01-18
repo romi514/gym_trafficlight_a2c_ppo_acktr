@@ -14,7 +14,7 @@ from gym_trafficlight.wrappers import  TrafficParameterSetWrapper
 from gym_trafficlight import PenetrationRateManager
 
 
-def make_env(args, rank, no_logging):
+def make_env(args, rank, no_logging,visual):
     def _thunk():
 
 
@@ -42,16 +42,16 @@ def make_env(args, rank, no_logging):
 
         env = TrafficParameterSetWrapper(env, env_args).unwrapped
 
-        if args.vis:
+        if visual:
             env = TrafficVisualizationWrapper(env).unwrapped
         return env
 
     return _thunk
 
 # Make a vector of environments (one for each process)
-def make_vec_envs(args, device, no_logging = False):
+def make_vec_envs(args, device, no_logging = False, visual=False):
 
-    envs = [make_env(args, i, no_logging)
+    envs = [make_env(args, i, no_logging,visual)
             for i in range(args.num_processes)]
 
     # Choose wrapper

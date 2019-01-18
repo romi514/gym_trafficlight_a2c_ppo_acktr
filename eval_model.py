@@ -5,6 +5,8 @@ import torch
 from a2c_ppo_acktr.envs import make_vec_envs
 
 
+### CHANGE EVAL_MODEL -- NOT WORKING AFTER CHANGES
+
 num_processes = 1
 seed = 1
 device = "cpu"
@@ -16,7 +18,7 @@ def main():
     actor_critic = torch.load(args.model_path)
         
 
-    eval_envs = make_vec_envs(seed + num_processes, num_processes, device, True, visual = True)
+    eval_envs = make_vec_envs(args, device, visual = True)
 
     eval_episode_rewards = []
 
