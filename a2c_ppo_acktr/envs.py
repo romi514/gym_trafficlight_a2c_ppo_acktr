@@ -8,7 +8,6 @@ import gym_trafficlight
 from baselines import bench
 from baselines.common.vec_env import VecEnvWrapper
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
 from gym_trafficlight.wrappers.visualization_wrapper import  TrafficVisualizationWrapper
 from gym_trafficlight.wrappers import  TrafficParameterSetWrapper
 from gym_trafficlight import PenetrationRateManager
@@ -56,11 +55,7 @@ def make_vec_envs(args, device, no_logging = False, visual=False):
     envs = [make_env(args, i, no_logging,visual)
             for i in range(args.num_processes)]
 
-    # Choose wrapper
-    if len(envs) > 1:
-        envs = SubprocVecEnv(envs)
-    else:
-        envs = DummyVecEnv(envs)
+    envs = SubprocVecEnv(envs)
 
     # Choose another wrapper
     envs = VecPyTorch(envs, args.state_rep, device)

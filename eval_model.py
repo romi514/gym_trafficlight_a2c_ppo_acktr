@@ -7,9 +7,6 @@ from argparse import Namespace
 
 from a2c_ppo_acktr.envs import make_vec_envs
 
-
-### CHANGE EVAL_MODEL -- NOT WORKING AFTER CHANGES
-
 def main():
 
     args = get_args()
@@ -19,7 +16,7 @@ def main():
     params = load_params(os.path.join(args.save_path,"parameters.txt"))
     device = torch.device("cuda:0" if params.cuda else "cpu")
 
-    eval_envs = make_vec_envs(params, device, visual = True)
+    eval_envs = make_vec_envs(params, device, visual = True, no_logging = True)
 
     eval_episode_rewards = []
 
@@ -59,24 +56,18 @@ def load_params(file_path):
             arg, str_value = tuple(line.split())
             if str_value == "True":
                 value = True
-                print("true")
             elif str_value == "False":
                 value = False
-                print("false")
             elif str_value == "None":
                 value = None
-                print("none")
             else: 
                 try:
                     value = int(str_value)
-                    print("int")
                 except ValueError:
                     try:
                         value = float(str_value)
-                        print("float")
                     except ValueError:
                         value = str_value
-                        print("string")
 
             vars(params)[arg] = value
         line = f.readline()
