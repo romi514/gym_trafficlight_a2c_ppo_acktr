@@ -28,7 +28,8 @@ def make_env(args, rank, no_logging,visual):
         if not no_logging and not args.no_log_waiting_time:
             if args.save_dir != "":
                 env_args['log_waiting_time'] = True
-                env_args['record_file'] = os.path.join(args.save_path, "waiting_time_process_"+str(rank+1)+".txt")
+                env_args['logger_type'] ='baselines_logger'
+                #env_args['record_file'] = os.path.join(args.save_path, "waiting_time_process_"+str(rank+1)+".txt")
             else:
                 print("No waiting time logging is done because no save file is given")
 
@@ -45,6 +46,7 @@ def make_env(args, rank, no_logging,visual):
 
         if visual:
             env = TrafficVisualizationWrapper(env).unwrapped
+
         return env
 
     return _thunk

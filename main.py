@@ -50,6 +50,7 @@ if args.save_dir != "":
         pass
     save_params(args, os.path.join(save_path, "parameters.txt"))
 args.save_path = save_path
+os.environ["OPENAI_LOGDIR"] = save_path
 
 
 def main():
@@ -210,7 +211,6 @@ def main():
     ## Visualize tracked rewards(over num_steps) over time
     if args.vis:
         visualize(reward_track, args.algo, save_path)
-
 
 if __name__ == "__main__":
     main()
