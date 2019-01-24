@@ -165,8 +165,8 @@ class Flatten(nn.Module):
 class CNNBase(NNBase):
     def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
-        combined_size = 4*32*5 + sign_num_inputs
-        hidden_size = int(np.power(2,np.ceil(np.log2(combined_size)))) # 1024
+        combined_size = 4*16*5 + sign_num_inputs
+        hidden_size = int(np.power(2,np.floor(np.log2(combined_size)))) # 512
         
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
@@ -176,9 +176,9 @@ class CNNBase(NNBase):
             nn.init.calculate_gain('relu'))
 
         self.lane = nn.Sequential(
-            init_(nn.Conv1d(1,16,6,stride=1)),
+            init_(nn.Conv1d(1,8,6,stride=1)),
             nn.ReLU(),nn.MaxPool1d(4),
-            init_(nn.Conv1d(16,32,6,stride=1)),
+            init_(nn.Conv1d(8,16,6,stride=1)),
             nn.ReLU(),nn.MaxPool1d(5)
         )
 
@@ -209,7 +209,7 @@ class CNNBase(NNBase):
         occ_inputs = occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1)
         hidden_lanes = self.lane(occ_inputs)        
 
-        hidden_lanes = hidden_lanes.view(-1,4*32*5)
+        hidden_lanes = hidden_lanes.view(-1,4*16*5)
         hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
 
         #if self.is_recurrent:
@@ -224,7 +224,8 @@ class CNNBase(NNBase):
 class MLPBase(NNBase):
     def __init__(self, num_inputs, recurrent):
 
-        hidden_size = num_inputs
+        hidden_size = 256
+
         super(MLPBase, self).__init__(recurrent, num_inputs, hidden_size)
 
         init_ = lambda m: init(m,
