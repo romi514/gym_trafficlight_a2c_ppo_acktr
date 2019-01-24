@@ -163,68 +163,36 @@ class Flatten(nn.Module):
         return x
 
 class CNNBase(NNBase):
-    def __init__(self, occ_num_inputs, sign_num_inputs, recurrent, seperate_lanes = False):
+    def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
-        self.seperate_lanes = seperate_lanes
-        combined_size = 4 + sign_num_inputs
+        combined_size = 4*32*5 + sign_num_inputs
+        hidden_size = int(np.power(2,np.ceil(np.log2(combined_size)))) # 1024
         
-        super(CNNBase, self).__init__(recurrent, combined_size, combined_size)
+        super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
         init_ = lambda m: init(m,
             nn.init.orthogonal_,
             lambda x: nn.init.constant_(x, 0),
             nn.init.calculate_gain('relu'))
 
-        if self.seperate_lanes:
-
-            self.lane1 = nn.Sequential(
-                init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
-                nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
-                init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
-                nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
-                init_(nn.Linear(5,1))
-            )
-            self.lane2 = nn.Sequential(
-                init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
-                nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
-                init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
-                nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
-                init_(nn.Linear(5,1))
-            )
-            self.lane3 = nn.Sequential(
-                init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
-                nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
-                init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
-                nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
-                init_(nn.Linear(5,1))
-            )
-            self.lane4 = nn.Sequential(
-                init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
-                nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
-                init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
-                nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
-                init_(nn.Linear(5,1))
-            )
-        else:
-            self.lane = nn.Sequential(
-                init_(nn.Conv1d(1,2,6,stride=1)), #(1,125) -> (2,120)
-                nn.ReLU(),nn.MaxPool1d(4),                 #(2,120) -> (2,30)
-                init_(nn.Conv1d(2,1,6,stride=1)), #(2,30) -> (1,25)
-                nn.ReLU(),nn.MaxPool1d(5),                 #(1,25) -> (1,5)
-                init_(nn.Linear(5,1))
-            )
+        self.lane = nn.Sequential(
+            init_(nn.Conv1d(1,16,6,stride=1)),
+            nn.ReLU(),nn.MaxPool1d(4),
+            init_(nn.Conv1d(16,32,6,stride=1)),
+            nn.ReLU(),nn.MaxPool1d(5)
+        )
 
         self.actor = nn.Sequential(
-            init_(nn.Linear(combined_size,combined_size)),
+            init_(nn.Linear(combined_size,hidden_size)),
             nn.ReLU(),
-            init_(nn.Linear(combined_size,combined_size)),
+            init_(nn.Linear(hidden_size,hidden_size)),
             nn.ReLU()
-            )
+        )
 
         self.critic = nn.Sequential(
-            init_(nn.Linear(combined_size, combined_size)),
+            init_(nn.Linear(combined_size, hidden_size)),
             nn.ReLU(),
-            init_(nn.Linear(combined_size, combined_size)),
+            init_(nn.Linear(hidden_size, hidden_size)),
             nn.ReLU()
         )
 
@@ -232,24 +200,17 @@ class CNNBase(NNBase):
             nn.init.orthogonal_,
             lambda x: nn.init.constant_(x, 0))
 
-        self.critic_linear = init_(nn.Linear(combined_size, 1))
+        self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         self.train()
 
     def forward(self, occ_inputs, sign_inputs, rnn_hxs, masks):
-        
-        if self.seperate_lanes:
-            hidden_lanes1 = self.lane1(occ_inputs[:,0,:].unsqueeze(1)).squeeze(1)
-            hidden_lanes2 = self.lane2(occ_inputs[:,1,:].unsqueeze(1)).squeeze(1)
-            hidden_lanes3 = self.lane3(occ_inputs[:,2,:].unsqueeze(1)).squeeze(1)
-            hidden_lanes4 = self.lane4(occ_inputs[:,3,:].unsqueeze(1)).squeeze(1)
-            hidden_input = torch.cat((hidden_lanes1, hidden_lanes2, hidden_lanes3, hidden_lanes4, sign_inputs),1)
-        else:
-            hidden_lanes1 = self.lane(occ_inputs[:,0,:].unsqueeze(1)).squeeze(1)
-            hidden_lanes2 = self.lane(occ_inputs[:,1,:].unsqueeze(1)).squeeze(1)
-            hidden_lanes3 = self.lane(occ_inputs[:,2,:].unsqueeze(1)).squeeze(1)
-            hidden_lanes4 = self.lane(occ_inputs[:,3,:].unsqueeze(1)).squeeze(1)
-            hidden_input = torch.cat((hidden_lanes1*0, hidden_lanes2*0, hidden_lanes3*0, hidden_lanes4*0, sign_inputs),1)
+
+        occ_inputs = occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1)
+        hidden_lanes = self.lane(occ_inputs)        
+
+        hidden_lanes = hidden_lanes.view(-1,4*32*5)
+        hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
 
         #if self.is_recurrent:
         #    x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
