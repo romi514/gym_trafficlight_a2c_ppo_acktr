@@ -16,8 +16,8 @@ It has been adapted to work with the gym environemnt [gym_trafficlight](https://
 
 * Python 3
 * [PyTorch](http://pytorch.org/)
-* [Visdom](https://github.com/facebookresearch/visdom) (not used yet, but may be used in the future)
 * [OpenAI baselines](https://github.com/openai/baselines)
+* [Tensorboard](https://www.tensorflow.org/guide/summaries_and_tensorboard) To visualize training progress
 
 ## Installation
 
@@ -50,8 +50,9 @@ Install docker [here](https://www.docker.com/) and run the following commands, _
 
 ### CPU
 ```bash
-docker run -it --name rltl_baselines -e SUMO_HOME='/home/sumo' -e OPENAI_LOGDIR='/home/training_logs' -e OPENAI_LOG_FORMAT='stdout,csv,tensorboard' -v /path/to/package/gym_trafficlight:/home/gym_trafficlight -v /path/to/package/baselines:/home/baselines -v /path/to/package/gym_trafficlight_a2c_ppo_acktr:/home/gym_trafficlight_a2c_ppo_acktr  beedrill/rltl-docker:cpu-py3 /bin/bash
+docker run -it --name rltl_baselines -e SUMO_HOME='/home/sumo' -v /path/to/package/gym_trafficlight:/home/gym_trafficlight -v /path/to/package/baselines:/home/baselines -v /path/to/package/gym_trafficlight_a2c_ppo_acktr:/home/gym_trafficlight_a2c_ppo_acktr  beedrill/rltl-docker:cpu-py3 /bin/bash
 
+pip3 install torch torchvision
 cd /home/baselines
 pip install -e .
 cd /home/gym_trafficlight
@@ -65,6 +66,7 @@ pip install -r requirement.txt
 ```bash
 nvidia-docker run -it --name rltl_pytorch_gpu -e SUMO_HOME='/home/sumo'   -v /path/to/package/gym_trafficlight:/home/gym_trafficlight  -v /path/to/package/gym_trafficlight_a2c_ppo_acktr:/home/a2c -v /path/to/package/baselines:/home/baselines  beedrill/rltl-docker:gpu-py3-pytorch /bin/bash
 
+pip3 install torch torchvision
 cd /home/baselines
 pip install -e .
 cd /home/gym_trafficlight
@@ -81,28 +83,48 @@ torch.cuda.current_device()
 if it print out 0, you are good to go.
 ## Training
 
-To train with default arguments (see `main.py --help ` to see or `a2c_ppo_acktr/arguments.py`)
+To train with default arguments (see `main.py --help` to see or `a2c_ppo_acktr/arguments.py`)
 
-###A2C (default)
+### A2C (default)
 
 ```bash
-python3 main.py --vis
+python3 main.py
 ```
 
 ### PPO
 ```bash
-python3 main.py --num-env-steps 1000000 --num-processes 4 --algo ppo --vis --clip-param 0.1 
+python3 main.py --num-env-steps 1000000 --num-processes 4 --algo ppo 
 ```
 
 ###ACKTR
 ```bash
-python3 main.py --num-env-steps 1000000 --algo acktr --vis
+python3 main.py --num-env-steps 1000000 --algo acktr
 ```
+
+Important arguments :
+`--num-processes` - number of different environment running at the same time for training (default: 2)
+`--penetration-rate` - Penetration rate for vehicle detection from 0 to 1 (default: 1)
+`--penetration-type` - Penetration type over training, linear or constant (default: constant)
+`--env-name` - Name of the map to train the network on (default: TrafficLight-v0)
+`--num-env-steps` - Total number of environment steps combined (default: 10e7)
+`--state-rep` - State representation, full, sign, or original (default: sign)
+`--reward-type` - Reward type, partial, global, local (default: partial)
+
+The number of updates is thus num-env-steps / num-processes / num-steps
+
+By default, the path where the results, model, and parameters used are saved is `./trained_models/<algo>/<timestamp>/`
+
+## Visualize
+
+To visualize the training, use Tensorboard.
+Open a new terminal outside of the docker, and navigate to `gym_trafficlight_a2c_ppo_acktr/trained_models/<algo>/<timestamp>/tb/`
+Have tensorboard installed and type `tensorboard --logdir ./`, 
+Copy the https address logged in the terminal window and navigate to it in your browser (on port 6006)
 
 ## Evaluation
 
-To evaluate a saved model with sumo-gui visualization. Can precise number of steps with --num_steps
+To evaluate a saved model with sumo-gui visualization. Can precise number of steps with `--num_steps`
 
 ```bash
-python3 evaluate_model.py --model_path ./trained_models/a2c/TrafficLight-v0-best.pt
+python3 evaluate_model.py --model_path ./trained_models/a2c/2019-01-20_19.35.56/model.pt
 ```

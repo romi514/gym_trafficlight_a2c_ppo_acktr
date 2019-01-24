@@ -45,8 +45,6 @@ def get_args():
                         help='save interval, one save per n updates (default: 1000)')
     parser.add_argument('--eval-interval', type=int, default=None,
                         help='eval interval, one eval per n updates (default: None)')
-    parser.add_argument('--vis-interval', type=int, default=100,
-                        help='vis interval, one log per n updates (default: 100) - Not used')
     parser.add_argument('--num-env-steps', type=int, default=10e6,
                         help='number of environment steps to train (default: 10e6)')
     parser.add_argument('--save-dir', default='./trained_models/',
@@ -61,8 +59,6 @@ def get_args():
                         help='use a linear schedule on the ppo clipping parameter')
     parser.add_argument('--vis', action='store_true', default=False,
                         help='saves and visualizes average reward over time')
-    parser.add_argument('--port', type=int, default=8097,
-                        help='port to run the server on (default: 8097)')
     parser.add_argument('--state-rep', default='sign',
                         help='state representation used : full, original, or sign (default: sign)')
     parser.add_argument('--env-name', default='TrafficLight-v0',
@@ -71,7 +67,7 @@ def get_args():
                         help='penetration rate of environment during training, constant or linear (default:constant)')
     parser.add_argument('--no-log-waiting-time', action='store_true', default=False,
                         help='disables logging of env waiting times')
-    parser.add_argument('--reward-type', default='local',
+    parser.add_argument('--reward-type', default='partial',
                         help='type of reward with regards to penetration : local, parial, global (default: local)') 
     parser.add_argument('--penetration-rate', type=float, default=1,
                         help='percentage of detected vehicles (default: 1)') 

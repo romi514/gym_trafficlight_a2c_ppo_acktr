@@ -72,7 +72,9 @@ def load_params(file_path):
             vars(params)[arg] = value
         line = f.readline()
 
-    params.cuda = not params.no_cuda and torch.cuda.is_available()
+    #params.cuda = not params.no_cuda and torch.cuda.is_available()
+    params.cuda = False
+    params.num_processes = 1
 
     return params
 

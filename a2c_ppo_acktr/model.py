@@ -249,7 +249,7 @@ class CNNBase(NNBase):
             hidden_lanes2 = self.lane(occ_inputs[:,1,:].unsqueeze(1)).squeeze(1)
             hidden_lanes3 = self.lane(occ_inputs[:,2,:].unsqueeze(1)).squeeze(1)
             hidden_lanes4 = self.lane(occ_inputs[:,3,:].unsqueeze(1)).squeeze(1)
-            hidden_input = torch.cat((hidden_lanes1, hidden_lanes2, hidden_lanes3, hidden_lanes4, sign_inputs),1)
+            hidden_input = torch.cat((hidden_lanes1*0, hidden_lanes2*0, hidden_lanes3*0, hidden_lanes4*0, sign_inputs),1)
 
         #if self.is_recurrent:
         #    x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
