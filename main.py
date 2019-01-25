@@ -51,6 +51,7 @@ if args.save_dir != "":
     save_params(args, os.path.join(save_path, "parameters.txt"))
 args.save_path = save_path
 os.environ["OPENAI_LOGDIR"] = save_path
+os.environ["OPENAI_LOG_FORMAT"] = 'stdout,csv,tensorboard'
 
 
 def main():
