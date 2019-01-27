@@ -25,7 +25,7 @@ def make_env(args, rank, no_logging,visual):
         env_args['reward_type'] = args.reward_type
         env_args['penetration_rate'] = args.penetration_rate
 
-        if not no_logging and not args.no_log_waiting_time:
+        if not no_logging and not args.no_log_waiting_time and rank == 0:
             if args.save_dir != "":
                 env_args['log_waiting_time'] = True
                 env_args['logger_type'] ='baselines_logger'
