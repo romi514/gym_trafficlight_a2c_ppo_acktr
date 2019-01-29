@@ -165,8 +165,8 @@ class Flatten(nn.Module):
 class CNNBase(NNBase):
     def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
-        combined_size = 4*16*5 + sign_num_inputs
-        hidden_size = int(np.power(2,np.floor(np.log2(combined_size)))) # 512
+        combined_size = 4*32*5 + sign_num_inputs
+        hidden_size = floor(np.power(2,np.floor(np.log2(combined_size)))) # 512
         
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
@@ -176,24 +176,24 @@ class CNNBase(NNBase):
             nn.init.calculate_gain('relu'))
 
         self.lane = nn.Sequential(
-            init_(nn.Conv1d(1,8,6,stride=1)),
-            nn.ReLU(),nn.MaxPool1d(4),
-            init_(nn.Conv1d(8,16,6,stride=1)),
-            nn.ReLU(),nn.MaxPool1d(5)
+            init_(nn.Conv1d(1,16,6,stride=2)), # 60
+            nn.LeakyReLU(),nn.MaxPool1d(3), # 20
+            init_(nn.Conv1d(16,32,2,stride=2)), # 10 
+            nn.LeakyReLU(),nn.MaxPool1d(2) # 5
         )
 
         self.actor = nn.Sequential(
             init_(nn.Linear(combined_size,hidden_size)),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             init_(nn.Linear(hidden_size,hidden_size)),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         self.critic = nn.Sequential(
             init_(nn.Linear(combined_size, hidden_size)),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             init_(nn.Linear(hidden_size, hidden_size)),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         init_ = lambda m: init(m,
@@ -235,16 +235,16 @@ class MLPBase(NNBase):
 
         self.actor = nn.Sequential(
             init_(nn.Linear(num_inputs, hidden_size)),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             init_(nn.Linear(hidden_size, hidden_size)),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         self.critic = nn.Sequential(
             init_(nn.Linear(num_inputs, hidden_size)),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             init_(nn.Linear(hidden_size, hidden_size)),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
