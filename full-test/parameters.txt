@@ -1,0 +1,36 @@
+#################################
+algo                	a2c                 
+lr                  	0.0007              
+eps                 	1e-05               
+alpha               	0.99                
+gamma               	0.99                
+use_gae             	False               
+tau                 	0.95                
+entropy_coef        	0.01                
+value_loss_coef     	0.5                 
+max_grad_norm       	0.5                 
+seed                	1                   
+cuda_deterministic  	False               
+num_processes       	2                   
+num_steps           	20                  
+ppo_epoch           	4                   
+num_mini_batch      	16                  
+clip_param          	0.1                 
+log_interval        	50                  
+save_interval       	1000                
+eval_interval       	None                
+vis_interval        	100                 
+num_env_steps       	10000000            
+save_dir            	./trained_models/   
+no_cuda             	False               
+recurrent_policy    	False               
+use_linear_lr_decay 	False               
+use_linear_clip_decay	False               
+vis                 	True                
+port                	8097                
+state_rep           	full                
+env_name            	TrafficLight-v0     
+penetration_rate    	constant            
+no_log_waiting_time 	False               
+cuda                	False               
+#################################

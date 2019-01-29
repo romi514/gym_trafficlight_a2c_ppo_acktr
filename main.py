@@ -27,6 +27,12 @@ if args.recurrent_policy:
 ## Number of epochs / updates  -----  num_steps is num of episodes before update
 num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
 
+if args.penetration_type == "linear":
+    update_period = 30*3000 // args.num_steps
+else:
+    update_period = 1
+
+
 # Set observation_space shapes
 occ_obs_shape = (4,125)
 sign_obs_shape = 10
@@ -62,28 +68,37 @@ def main():
     envs = make_vec_envs(args, device)
 
     ## Setup Policy / network architecture
-    actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
-    actor_critic.to(device)
+    if args.load_path != '':
+        online_actor_critic = torch.load(os.path.join(args.load_path,"model.pt"))
+        target_actor_critic = torch.load(os.path.join(args.load_path,"model.pt"))
+
+    else :
+    	online_actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
+    	online_actor_critic.to(device)
+    	target_actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
+    	target_actor_critic.to(device)
+    	target_actor_critic.base.load_state_dict(online_actor_critic.base.state_dict())
+
 
     ## Choose algorithm to use
     if args.algo == 'a2c':
-        agent = algo.A2C_ACKTR(actor_critic, args.value_loss_coef,
+        agent = algo.A2C_ACKTR(online_actor_critic, args.value_loss_coef,
                                args.entropy_coef, lr=args.lr,
                                eps=args.eps, alpha=args.alpha,
                                max_grad_norm=args.max_grad_norm)
     elif args.algo == 'ppo':
-        agent = algo.PPO(actor_critic, args.clip_param, args.ppo_epoch, args.num_mini_batch,
+        agent = algo.PPO(online_actor_critic, args.clip_param, args.ppo_epoch, args.num_mini_batch,
                          args.value_loss_coef, args.entropy_coef, lr=args.lr,
                                eps=args.eps,
                                max_grad_norm=args.max_grad_norm)
     elif args.algo == 'acktr':
-        agent = algo.A2C_ACKTR(actor_critic, args.value_loss_coef,
+        agent = algo.A2C_ACKTR(online_actor_critic, args.value_loss_coef,
                                args.entropy_coef, acktr=True)
 
     ## Initiate memory buffer
     rollouts = RolloutStorage(args.num_steps, args.num_processes,
                         occ_obs_shape, sign_obs_shape, envs.action_space,
-                        actor_critic.recurrent_hidden_state_size)
+                        target_actor_critic.recurrent_hidden_state_size)
 
     ## Start env with first observation
     occ_obs, sign_obs = envs.reset()
@@ -97,7 +112,7 @@ def main():
     reward_track = []
     start = time.time()
 
-    ## Loop over every policy update
+    ## Loop over every policy updatetarget network
     for j in range(num_updates):
 
         ## Setup parameter decays
@@ -114,10 +129,10 @@ def main():
 
         ## Loop over num_steps environment updates to form trajectory
         for step in range(args.num_steps):
-            # Sample actions
+            # Sample actionspython3 main.py --algo ppo --num-steps 700000 --penetration-rate $i --env-name TrafficLight-simple-dense-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay
             with torch.no_grad():
                 # Pass observation through network and get outputs
-                value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
+                value, action, action_log_prob, recurrent_hidden_states = online_actor_critic.act(
                         rollouts.occ_obs[step], rollouts.sign_obs[step],
                         rollouts.recurrent_hidden_states[step],
                         rollouts.masks[step])
@@ -135,7 +150,7 @@ def main():
 
         ## Get state value of current env state
         with torch.no_grad():
-            next_value = actor_critic.get_value(rollouts.occ_obs[-1], rollouts.sign_obs[-1],
+            next_value = target_actor_critic.get_value(rollouts.occ_obs[-1], rollouts.sign_obs[-1],
                                                 rollouts.recurrent_hidden_states[-1],
                                                 rollouts.masks[-1]).detach()
 
@@ -148,14 +163,17 @@ def main():
 
         # Clean the rollout by cylcing last elements to first ones
         rollouts.after_update()
+        
+        if (args.penetration_type == "constant") or (j % update_period == 0):
+            target_actor_critic.base.load_state_dict(online_actor_critic.base.state_dict())
 
         ## Save model after each save_interval
         if (j % args.save_interval == 0 or j == num_updates - 1) and args.save_dir != "":
 
             # A really ugly way to save a model to CPU
-            save_model = actor_critic
+            save_model = target_actor_critic
             if args.cuda:
-                save_model = copy.deepcopy(actor_critic).cpu()
+                save_model = copy.deepcopy(target_actor_critic).cpu()
 
             torch.save(save_model, os.path.join(save_path, "model.pt"))
 
@@ -187,12 +205,12 @@ def main():
 
             occ_obs, sign_obs = eval_envs.reset()
             eval_recurrent_hidden_states = torch.zeros(args.num_processes,
-                            actor_critic.recurrent_hidden_state_size, device=device)
+                            target_actor_critic.recurrent_hidden_state_size, device=device)
             eval_masks = torch.zeros(args.num_processes, 1, device=device)
 
             while len(eval_episode_rewards) < 10:
                 with torch.no_grad():
-                    _, _, action, _, eval_recurrent_hidden_states = actor_critic.act(
+                    _, _, action, _, eval_recurrent_hidden_states = target_actor_critic.act(
                         occ_obs, sign_obs, eval_recurrent_hidden_states, eval_masks, deterministic=True)
 
                 # Obser reward and next obs
