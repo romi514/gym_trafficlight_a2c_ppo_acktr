@@ -166,7 +166,7 @@ class CNNBase(NNBase):
     def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
         combined_size = 4*32*5 + sign_num_inputs
-        hidden_size = floor(np.power(2,np.floor(np.log2(combined_size)))) # 512
+        hidden_size = np.floor(np.power(2,np.floor(np.log2(combined_size)))) # 512
         
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
