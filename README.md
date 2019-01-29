@@ -16,7 +16,7 @@ It has been adapted to work with the gym environemnt [gym_trafficlight](https://
 
 * Python 3
 * [PyTorch](http://pytorch.org/)
-* [OpenAI baselines](https://github.com/openai/baselines)
+* [OpenAI baselines](https://github.com/beedrill/baselines)
 * [Tensorboard](https://www.tensorflow.org/guide/summaries_and_tensorboard) To visualize training progress
 
 ## Installation
@@ -28,7 +28,7 @@ In order to install requirements, follow:
 pip3 install torch torchvision
 
 # Baselines for Atari preprocessing
-git clone https://github.com/openai/baselines.git
+git clone https://github.com/beedrill/baselines.git
 cd baselines
 pip install -e .
 
