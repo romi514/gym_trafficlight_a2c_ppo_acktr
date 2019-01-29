@@ -166,7 +166,7 @@ class CNNBase(NNBase):
     def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
         combined_size = 4*32*5 + sign_num_inputs
-        hidden_size = np.floor(np.power(2,np.floor(np.log2(combined_size)))) # 512
+        hidden_size = int(np.floor(np.power(2,np.floor(np.log2(combined_size))))) # 512
         
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
@@ -209,7 +209,7 @@ class CNNBase(NNBase):
         occ_inputs = occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1)
         hidden_lanes = self.lane(occ_inputs)        
 
-        hidden_lanes = hidden_lanes.view(-1,4*16*5)
+        hidden_lanes = hidden_lanes.view(-1,4*32*5)
         hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
 
         #if self.is_recurrent:
