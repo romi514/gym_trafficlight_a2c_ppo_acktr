@@ -5,18 +5,23 @@
 
 cd ..
 
-for i in 16 32 64
-do
-	python3 main.py --algo a2c --num-env-steps 1000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps $i
-	wait
-	python3 main.py --algo acktr --num-env-steps 1000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps $i
-	wait
-done
 
-for i in 128 256
-do
-	python3 main.py --algo a2c --num-env-steps 10000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps $i
-	wait
-	python3 main.py --algo acktr --num-env-steps 20000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps $i
-	wait
-done
+python3 main.py --algo a2c --num-env-steps 2000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 16
+wait
+python3 main.py --algo acktr --num-env-steps 2000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 16
+wait
+
+python3 main.py --algo a2c --num-env-steps 4000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 32
+wait
+python3 main.py --algo acktr --num-env-steps 4000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 32
+wait
+
+python3 main.py --algo a2c --num-env-steps 8000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 64
+wait
+python3 main.py --algo acktr --num-env-steps 8000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 64
+wait
+
+python3 main.py --algo a2c --num-env-steps 12000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 128
+wait
+python3 main.py --algo acktr --num-env-steps 12000000 --penetration-rate 0.4 --env-name TrafficLight-simple-medium-v0 --state-rep full --num-steps 128
+wait
