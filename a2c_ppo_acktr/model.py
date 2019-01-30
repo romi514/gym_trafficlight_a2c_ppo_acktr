@@ -165,7 +165,7 @@ class Flatten(nn.Module):
 class CNNBase(NNBase):
     def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
-        combined_size = 4*32*5 + sign_num_inputs
+        combined_size = 4*16*5 + sign_num_inputs
         hidden_size = int(np.floor(np.power(2,np.floor(np.log2(combined_size))))) # 512
         
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
@@ -174,26 +174,26 @@ class CNNBase(NNBase):
             nn.init.orthogonal_,
             lambda x: nn.init.constant_(x, 0),
             nn.init.calculate_gain('relu'))
-
+        
         self.lane = nn.Sequential(
-            init_(nn.Conv1d(1,16,6,stride=2)), # 60
-            nn.LeakyReLU(),nn.MaxPool1d(3), # 20
-            init_(nn.Conv1d(16,32,2,stride=2)), # 10 
-            nn.LeakyReLU(),nn.MaxPool1d(2) # 5
+            init_(nn.Conv1d(1,8,6,stride=1)),
+            nn.ReLU(),nn.MaxPool1d(4),
+            init_(nn.Conv1d(8,16,6,stride=1)),
+            nn.ReLU(),nn.MaxPool1d(5)
         )
 
         self.actor = nn.Sequential(
             init_(nn.Linear(combined_size,hidden_size)),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             init_(nn.Linear(hidden_size,hidden_size)),
-            nn.LeakyReLU()
+            nn.ReLU()
         )
 
         self.critic = nn.Sequential(
             init_(nn.Linear(combined_size, hidden_size)),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             init_(nn.Linear(hidden_size, hidden_size)),
-            nn.LeakyReLU()
+            nn.ReLU()
         )
 
         init_ = lambda m: init(m,
@@ -209,7 +209,7 @@ class CNNBase(NNBase):
         occ_inputs = occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1)
         hidden_lanes = self.lane(occ_inputs)        
 
-        hidden_lanes = hidden_lanes.view(-1,4*32*5)
+        hidden_lanes = hidden_lanes.view(-1,4*16*5)
         hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
 
         #if self.is_recurrent:
