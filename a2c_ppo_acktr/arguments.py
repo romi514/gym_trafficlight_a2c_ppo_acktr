@@ -68,7 +68,7 @@ def get_args():
     parser.add_argument('--no-log-waiting-time', action='store_true', default=False,
                         help='disables logging of env waiting times')
     parser.add_argument('--reward-type', default='partial',
-                        help='type of reward with regards to penetration : local, parial, global (default: local)') 
+                        help='type of reward with regards to penetration : local, partial, global (default: partial)') 
     parser.add_argument('--penetration-rate', type=float, default=1,
                         help='percentage of detected vehicles (default: 1)')
     parser.add_argument('--load-path', default='',
