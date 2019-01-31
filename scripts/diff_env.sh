@@ -2,7 +2,20 @@
 
 cd ..
 
-for i in 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 1
+python3 main.py --algo ppo --penetration-rate 1 --env-name TrafficLight-simple-sparse-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
+wait
+#python3 main.py --algo ppo --penetration-rate $i --env-name TrafficLight-simple-medium-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
+#wait
+python3 main.py --algo ppo --penetration-rate 1 --env-name TrafficLight-simple-dense-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
+wait
+python3 main.py --algo ppo --penetration-rate 1 --env-name TrafficLight-Lust12408-midnight-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
+wait
+python3 main.py --algo ppo --penetration-rate 1 --env-name TrafficLight-Lust12408-rush-hour-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
+wait
+python3 main.py --algo ppo --penetration-rate 1 --env-name TrafficLight-Lust12408-regular-time-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
+wait
+
+for i in 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8
 do
 	python3 main.py --algo ppo --penetration-rate $i --env-name TrafficLight-simple-sparse-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
 	wait
@@ -18,3 +31,4 @@ do
 	wait
 
 done
+

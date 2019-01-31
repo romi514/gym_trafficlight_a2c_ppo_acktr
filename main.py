@@ -77,7 +77,7 @@ def main():
     	online_actor_critic.to(device)
     	target_actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
     	target_actor_critic.to(device)
-    	target_actor_critic.base.load_state_dict(online_actor_critic.base.state_dict())
+    	target_actor_critic.load_state_dict(online_actor_critic.state_dict())
 
 
     ## Choose algorithm to use
@@ -132,7 +132,7 @@ def main():
             # Sample actionspython3 main.py --algo ppo --num-steps 700000 --penetration-rate $i --env-name TrafficLight-simple-dense-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay
             with torch.no_grad():
                 # Pass observation through network and get outputs
-                value, action, action_log_prob, recurrent_hidden_states = online_actor_critic.act(
+                value, action, action_log_prob, recurrent_hidden_states = target_actor_critic.act(
                         rollouts.occ_obs[step], rollouts.sign_obs[step],
                         rollouts.recurrent_hidden_states[step],
                         rollouts.masks[step])
@@ -165,7 +165,7 @@ def main():
         rollouts.after_update()
         
         if (args.penetration_type == "constant") or (j % update_period == 0):
-            target_actor_critic.base.load_state_dict(online_actor_critic.base.state_dict())
+            target_actor_critic.load_state_dict(online_actor_critic.state_dict())
 
         ## Save model after each save_interval
         if (j % args.save_interval == 0 or j == num_updates - 1) and args.save_dir != "":
