@@ -70,7 +70,9 @@ def get_args():
     parser.add_argument('--reward-type', default='partial',
                         help='type of reward with regards to penetration : local, parial, global (default: local)') 
     parser.add_argument('--penetration-rate', type=float, default=1,
-                        help='percentage of detected vehicles (default: 1)') 
+                        help='percentage of detected vehicles (default: 1)')
+    parser.add_argument('--load-path', default='',
+                        help='load path of model to load and do training on') 
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

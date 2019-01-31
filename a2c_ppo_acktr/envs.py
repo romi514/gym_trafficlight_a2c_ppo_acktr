@@ -37,7 +37,7 @@ def make_env(args, rank, no_logging,visual):
             prm = PenetrationRateManager(
                 trend = 'linear',
                 transition_time = 3*365, #3 years
-                pr_start = 0.05,
+                pr_start = 0.1,
                 pr_end = 1
                 )
             env_args['reset_manager'] = prm
