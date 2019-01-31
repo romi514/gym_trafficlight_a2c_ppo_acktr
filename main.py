@@ -27,10 +27,9 @@ if args.recurrent_policy:
 ## Number of epochs / updates  -----  num_steps is num of episodes before update
 num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
 
+update_period = 0
 if args.penetration_type == "linear":
     update_period = 30*3000 // args.num_steps
-else:
-    update_period = 1
 
 
 # Set observation_space shapes
@@ -79,6 +78,8 @@ def main():
     	target_actor_critic.to(device)
     	target_actor_critic.load_state_dict(online_actor_critic.state_dict())
 
+    if args.penetration_type == "constant":
+        target_actor_critic = online_actor_critic
 
     ## Choose algorithm to use
     if args.algo == 'a2c':
@@ -164,7 +165,7 @@ def main():
         # Clean the rollout by cylcing last elements to first ones
         rollouts.after_update()
         
-        if (args.penetration_type == "constant") or (j % update_period == 0):
+        if (args.penetration_type == "linear") and (j % update_period == 0):
             target_actor_critic.load_state_dict(online_actor_critic.state_dict())
 
         ## Save model after each save_interval
