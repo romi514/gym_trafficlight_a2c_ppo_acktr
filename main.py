@@ -33,8 +33,12 @@ if args.penetration_type == "linear":
 
 
 # Set observation_space shapes
-occ_obs_shape = (4,125)
-sign_obs_shape = 10
+if args.env_name in ["TrafficLight-simple-dense-v0","TrafficLight-simple-sparse-v0","TrafficLight-simple-medium-v0","TrafficLight-v0"]:
+    occ_obs_shape = (4,125)
+    sign_obs_shape = 10
+else:
+    occ_obs_shape = (12,125)
+    sign_obs_shape = 26
 
 ## Initialize all seeds
 torch.manual_seed(args.seed)
