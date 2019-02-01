@@ -24,12 +24,15 @@ if args.recurrent_policy:
     assert args.algo in ['a2c', 'ppo'], \
         'Recurrent policy is not implemented for ACKTR'
 
+
 ## Number of epochs / updates  -----  num_steps is num of episodes before update
 num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
 
 update_period = 0
 if args.penetration_type == "linear":
     update_period = 30*3000 // args.num_steps
+    args.num_processes = 1
+
 
 
 # Set observation_space shapes
@@ -52,7 +55,10 @@ if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
 # Generate save_path
 save_path = ""
 if args.save_dir != "":
-    save_path = os.path.join(args.save_dir, args.algo,args.env_name,str(args.penetration_rate),get_time())
+    if args.penetration_type == "constant":
+        save_path = os.path.join(args.save_dir, args.algo,args.env_name,str(args.penetration_rate),get_time())
+    else :
+        save_path = os.path.join(args.save_dir, args.algo,args.env_name,"Dynamic",get_time())
     try:
         os.makedirs(save_path)
     except OSError:

@@ -169,14 +169,14 @@ class CNNBase(NNBase):
 
         hidden_size = int(np.power(2,np.floor(np.log2(combined_size))))
 
-     
+
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
         init_ = lambda m: init(m,
             nn.init.orthogonal_,
             lambda x: nn.init.constant_(x, 0),
             nn.init.calculate_gain('relu'))
-        
+
         self.lane = nn.Sequential(
             init_(nn.Conv1d(1,8,6,stride=1)),
             nn.ReLU(),nn.MaxPool1d(4),
@@ -208,7 +208,7 @@ class CNNBase(NNBase):
 
     def forward(self, occ_inputs, sign_inputs, rnn_hxs, masks):
 
-        hidden_lanes = self.lane(occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1))        
+        hidden_lanes = self.lane(occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1))
         hidden_lanes = hidden_lanes.view(-1,occ_inputs.size(1)*16*5)
         hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
 
@@ -256,7 +256,6 @@ class MLPBase(NNBase):
 
         if self.is_recurrent:
             x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
-
         hidden_critic = self.critic(x)
         hidden_actor = self.actor(x)
 
