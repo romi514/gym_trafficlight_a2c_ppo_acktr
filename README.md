@@ -100,7 +100,7 @@ python3 main.py --algo ppo --penetration-rate 0.1 --env-name TrafficLight-Lust12
 python3 main.py --env-name TrafficLight-simple-medium-v0 --algo acktr --num-processes 16 --num-steps 32 --use-linear-lr-decay --penetration-rate 0.1 --state-rep original
 ```
 
-Important arguments :
+Important arguments :\
 `--num-processes` number of different environment running at the same time for training (default: 2)\
 `--penetration-rate` Penetration rate for vehicle detection from 0 to 1 (default: 1)\
 `--penetration-type` Penetration type over training, linear or constant (default: constant)\
