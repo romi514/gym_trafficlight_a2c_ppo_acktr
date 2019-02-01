@@ -52,16 +52,16 @@ if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
 # Generate save_path
 save_path = ""
 if args.save_dir != "":
-    save_path = os.path.join(args.save_dir, args.algo, get_time())
+    save_path = os.path.join(args.save_dir, args.algo,args.env_name,str(args.penetration_rate),get_time())
     try:
         os.makedirs(save_path)
     except OSError:
         pass
+    args.save_path = save_path
     save_params(args, os.path.join(save_path, "parameters.txt"))
-args.save_path = save_path
+
 os.environ["OPENAI_LOGDIR"] = save_path
 os.environ["OPENAI_LOG_FORMAT"] = 'stdout,csv,tensorboard'
-
 
 def main():
     torch.set_num_threads(1)
@@ -72,9 +72,15 @@ def main():
 
     ## Setup Policy / network architecture
     if args.load_path != '':
-        online_actor_critic = torch.load(os.path.join(args.load_path,"model.pt"))
-        target_actor_critic = torch.load(os.path.join(args.load_path,"model.pt"))
-
+        if os.path.isfile(os.path.join(args.load_path,"best_model.pt")):
+            import_name = "best_model.pt"
+        else:
+            import_name = "model.pt"
+        online_actor_critic = torch.load(os.path.join(args.load_path,import_name))
+        target_actor_critic = torch.load(os.path.join(args.load_path,import_name))
+        if args.cuda:
+            target_actor_critic = target_actor_critic.cuda()
+            online_actor_critic = online_actor_critic.cuda()
     else :
     	online_actor_critic = Policy(occ_obs_shape, sign_obs_shape, args.state_rep, envs.action_space, args.recurrent_policy)
     	online_actor_critic.to(device)
@@ -115,6 +121,7 @@ def main():
     # Last 20 rewards - can set different queue length for different averaging
     episode_rewards = deque(maxlen=args.num_steps)
     reward_track = []
+    best_eval_rewards = 0
     start = time.time()
 
     ## Loop over every policy updatetarget network
@@ -168,11 +175,11 @@ def main():
 
         # Clean the rollout by cylcing last elements to first ones
         rollouts.after_update()
-        
+
         if (args.penetration_type == "linear") and (j % update_period == 0):
             target_actor_critic.load_state_dict(online_actor_critic.state_dict())
 
-        ## Save model after each save_interval
+        ## Save model}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.3f}/{:.3f}, min/max reward {:.3f}/{:.3f}\n".
         if (j % args.save_interval == 0 or j == num_updates - 1) and args.save_dir != "":
 
             # A really ugly way to save a model to CPU
@@ -201,21 +208,25 @@ def main():
                        np.max(episode_rewards), dist_entropy))
 
         ## Evaluate model on new environments for 10 rewards
+        percentage = 100*total_num_steps // args.num_env_steps
         if (args.eval_interval is not None
-                and len(episode_rewards) > 1
-                and j % args.eval_interval == 0):
-            eval_envs = make_vec_envs(args, device, no_logging = True)
+                and percentage > 1
+                and (j % args.eval_interval == 0 or j == num_updates - 1)):
+            print("###### EVALUATING #######")
+            args_eval = copy.deepcopy(args)
+            args_eval.num_processes = 1
+            eval_envs = make_vec_envs(args_eval, device, no_logging = True)
 
             eval_episode_rewards = []
 
             occ_obs, sign_obs = eval_envs.reset()
-            eval_recurrent_hidden_states = torch.zeros(args.num_processes,
+            eval_recurrent_hidden_states = torch.zeros(args_eval.num_processes,
                             target_actor_critic.recurrent_hidden_state_size, device=device)
-            eval_masks = torch.zeros(args.num_processes, 1, device=device)
+            eval_masks = torch.zeros(args_eval.num_processes, 1, device=device)
 
-            while len(eval_episode_rewards) < 10:
+            while len(eval_episode_rewards) < 3000:
                 with torch.no_grad():
-                    _, _, action, _, eval_recurrent_hidden_states = target_actor_critic.act(
+                    _, action, _, eval_recurrent_hidden_states = target_actor_critic.act(
                         occ_obs, sign_obs, eval_recurrent_hidden_states, eval_masks, deterministic=True)
 
                 # Obser reward and next obs
@@ -228,9 +239,12 @@ def main():
 
             eval_envs.close()
 
-            print(" Evaluation using {} episodes: mean reward {:.5f}\n".
-                format(len(eval_episode_rewards),
-                       np.mean(eval_episode_rewards)))
+            if np.mean(eval_episode_rewards) > best_eval_rewards:
+                best_eval_rewards = np.mean(eval_episode_rewards)
+                save_model = target_actor_critic
+                if args.cuda:
+                    save_model = copy.deepcopy(target_actor_critic).cpu()
+                torch.save(save_model, os.path.join(save_path, 'best_model.pt'))
 
     ## Visualize tracked rewards(over num_steps) over time
     if args.vis:
