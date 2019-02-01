@@ -101,13 +101,13 @@ python3 main.py --env-name TrafficLight-simple-medium-v0 --algo acktr --num-proc
 ```
 
 Important arguments :
-`--num-processes` - number of different environment running at the same time for training (default: 2)
-`--penetration-rate` - Penetration rate for vehicle detection from 0 to 1 (default: 1)
-`--penetration-type` - Penetration type over training, linear or constant (default: constant)
-`--env-name` - Name of the map to train the network on (default: TrafficLight-v0)
-`--num-env-steps` - Total number of environment steps combined (default: 10e7)
-`--state-rep` - State representation, full, sign, or original (default: sign)
-`--reward-type` - Reward type, partial, global, local (default: partial)
+`--num-processes` number of different environment running at the same time for training (default: 2)\
+`--penetration-rate` Penetration rate for vehicle detection from 0 to 1 (default: 1)\
+`--penetration-type` Penetration type over training, linear or constant (default: constant)\
+`--env-name` Name of the map to train the network on (default: TrafficLight-v0)\
+`--num-env-steps` Total number of environment steps combined (default: 10e7)\
+`--state-rep` State representation, full, sign, or original (default: sign)\
+`--reward-type` Reward type, partial, global, local (default: partial)\
 
 The number of updates is thus num-env-steps / num-processes / num-steps
 
@@ -131,7 +131,7 @@ python3 main.py --algo a2c --penetration-type linear --env-name TrafficLight-sim
 python3 main.py --algo ppo --penetration-type linear --env-name TrafficLight-Lust12408-regular-time-v0 --lr 2.5e-4 --num-processes 1 --num-steps 1024 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-Lust12408-regular-time-v0/0.1/2019-02-01_02.03.44/
 ```
 
-###ACKTR
+### ACKTR
 ```bash
 python3 main.py --algo acktr --penetration-type linear --env-name TrafficLight-simple-medium-v0  --num-processes 1 --num-steps 512  --use-linear-lr-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-simple-medium-v0/0.1/2019-02-01_02.03.44/
 ```
