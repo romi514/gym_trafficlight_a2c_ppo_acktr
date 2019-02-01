@@ -85,20 +85,19 @@ if it print out 0, you are good to go.
 
 To train with default arguments (see `main.py --help` to see or `a2c_ppo_acktr/arguments.py`)
 
-### A2C (default)
-
+### A2C
 ```bash
-python3 main.py
+python3 main.py --env-name TrafficLight-Lust12408-rush-hour-v0 --algo a2c --num-processes 10 --num-steps 16 --use-linear-lr-decay --num-env-steps 30000000 --penetration-rate 0.1 --state-rep original
 ```
 
 ### PPO
 ```bash
-python3 main.py --num-env-steps 1000000 --num-processes 4 --algo ppo 
+python3 main.py --algo ppo --penetration-rate 0.1 --env-name TrafficLight-Lust12408-rush-hour-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
 ```
 
 ###ACKTR
 ```bash
-python3 main.py --num-env-steps 1000000 --algo acktr
+python3 main.py --env-name TrafficLight-simple-medium-v0 --algo acktr --num-processes 16 --num-steps 32 --use-linear-lr-decay --penetration-rate 0.1 --state-rep original
 ```
 
 Important arguments :
@@ -114,6 +113,29 @@ The number of updates is thus num-env-steps / num-processes / num-steps
 
 By default, the path where the results, model, and parameters used are saved is `./trained_models/<algo>/<timestamp>/`
 
+If you want to load an existing model, specify the path to the model in the argument `--load-path`, `best_model.pt` will be chosen or `model.pt` if it isn't present.
+
+## Dynamic Penetration Adaptation
+
+To load a pre-existing model and see its training performance under incrementing penetration rate on one process. The default incrementation is linear of 3 years (3*365*3000 num-env-steps).
+Make sure to select the trained model on 0.1 penetration rate.
+
+### A2C
+```bash
+python3 main.py --algo a2c --penetration-type linear --env-name TrafficLight-simple-medium-v0 --num-processes 1 --num-steps 160 --use-linear-lr-decay --state-rep original --load-path /home/a2c/trained_models/a2c/TrafficLight-simple-medium-v0/0.1/2019-01-27_20.06.53/
+
+```
+
+### PPO
+```bash
+python3 main.py --algo ppo --penetration-type linear --env-name TrafficLight-Lust12408-regular-time-v0 --lr 2.5e-4 --num-processes 1 --num-steps 1024 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-Lust12408-regular-time-v0/0.1/2019-02-01_02.03.44/
+```
+
+###ACKTR
+```bash
+python3 main.py --algo acktr --penetration-type linear --env-name TrafficLight-simple-medium-v0  --num-processes 1 --num-steps 512  --use-linear-lr-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-simple-medium-v0/0.1/2019-02-01_02.03.44/
+```
+
 ## Visualize
 
 To visualize the training, use Tensorboard.
@@ -123,8 +145,9 @@ Copy the https address logged in the terminal window and navigate to it in your 
 
 ## Evaluation
 
-To evaluate a saved model with sumo-gui visualization. Can precise number of steps with `--num_steps`
+To evaluate a saved model, specify the path where the model.pt (or best_model.pt) is saved. Can precise number of environment resets with with `--num_resets`. Can toggle `--vis` to evaluate with sumo-gui visualization.
+A folder `eval_model` is created at the specified path with the evaluation results.
 
 ```bash
-python3 evaluate_model.py --model_path ./trained_models/a2c/2019-01-20_19.35.56/model.pt
+python3 eval_model.py --save-path ./trained_models/a2c/2019-01-20_19.35.56 --num_resets 2
 ```
