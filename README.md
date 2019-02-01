@@ -131,7 +131,8 @@ python3 main.py --algo ppo --penetration-type linear --env-name TrafficLight-Lus
 ```
 
 ### ACKTR
-```bash --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-simple-medium-v0/0.1/2019-02-01_02.03.44/
+```bash 
+--state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-simple-medium-v0/0.1/2019-02-01_02.03.44/
 ```
 
 ## Visualize
