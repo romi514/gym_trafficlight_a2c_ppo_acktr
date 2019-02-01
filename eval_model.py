@@ -15,7 +15,12 @@ def main():
 
     args = get_args()
 
-    actor_critic = torch.load(os.path.join(args.save_path,"model.pt"))
+    if os.path.isfile(os.path.join(args.save_path,"best_model.pt")):
+        import_name = "best_model.pt"
+    else:
+        import_name = "model.pt"
+
+    actor_critic = torch.load(os.path.join(args.save_path,import_name))
     params = load_params(os.path.join(args.save_path,"parameters.txt"))
     device = torch.device("cuda:0" if params.cuda else "cpu")
 
