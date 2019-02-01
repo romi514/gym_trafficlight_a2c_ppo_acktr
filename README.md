@@ -122,18 +122,16 @@ Make sure to select the trained model on 0.1 penetration rate.
 
 ### A2C
 ```bash
-python3 main.py --algo a2c --penetration-type linear --env-name TrafficLight-simple-medium-v0 --num-processes 1 --num-steps 160 --use-linear-lr-decay --state-rep original --load-path /home/a2c/trained_models/a2c/TrafficLight-simple-medium-v0/0.1/2019-01-27_20.06.53/
-
+python3 main.py --algo a2c --penetration-type linear --env-name TrafficLight-simple-medium-v0 --num-processes 1 --num-steps 512 --state-rep original --load-path /home/a2c/trained_models/a2c/TrafficLight-simple-medium-v0/0.1/2019-01-27_20.06.53/
 ```
 
 ### PPO
 ```bash
-python3 main.py --algo ppo --penetration-type linear --env-name TrafficLight-Lust12408-regular-time-v0 --lr 2.5e-4 --num-processes 1 --num-steps 1024 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-Lust12408-regular-time-v0/0.1/2019-02-01_02.03.44/
+python3 main.py --algo ppo --penetration-type linear --env-name TrafficLight-Lust12408-regular-time-v0 --lr 2.5e-4 --num-processes 1 --num-steps 1024 --num-mini-batch 4  --use-linear-clip-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-Lust12408-regular-time-v0/0.1/2019-02-01_02.03.44/
 ```
 
 ### ACKTR
-```bash
-python3 main.py --algo acktr --penetration-type linear --env-name TrafficLight-simple-medium-v0  --num-processes 1 --num-steps 512  --use-linear-lr-decay --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-simple-medium-v0/0.1/2019-02-01_02.03.44/
+```bash --state-rep original --load-path /home/a2c/trained_models/ppo/TrafficLight-simple-medium-v0/0.1/2019-02-01_02.03.44/
 ```
 
 ## Visualize
