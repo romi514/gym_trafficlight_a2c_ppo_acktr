@@ -95,7 +95,7 @@ python3 main.py --env-name TrafficLight-Lust12408-rush-hour-v0 --algo a2c --num-
 python3 main.py --algo ppo --penetration-rate 0.1 --env-name TrafficLight-Lust12408-rush-hour-v0 --lr 2.5e-4 --num-processes 8 --num-steps 128 --num-mini-batch 4 --use-linear-lr-decay --use-linear-clip-decay --state-rep original
 ```
 
-###ACKTR
+### ACKTR
 ```bash
 python3 main.py --env-name TrafficLight-simple-medium-v0 --algo acktr --num-processes 16 --num-steps 32 --use-linear-lr-decay --penetration-rate 0.1 --state-rep original
 ```
@@ -107,17 +107,17 @@ Important arguments :
 `--env-name` Name of the map to train the network on (default: TrafficLight-v0)\
 `--num-env-steps` Total number of environment steps combined (default: 10e7)\
 `--state-rep` State representation, full, sign, or original (default: sign)\
-`--reward-type` Reward type, partial, global, local (default: partial)\
+`--reward-type` Reward type, partial, global, local (default: partial)
 
 The number of updates is thus num-env-steps / num-processes / num-steps
 
-By default, the path where the results, model, and parameters used are saved is `./trained_models/<algo>/<timestamp>/`
+By default, the path where the results, model, and parameters used are saved is `./trained_models/<algo>/<map>/<pen_rate>/<timestamp>/`
 
 If you want to load an existing model, specify the path to the model in the argument `--load-path`, `best_model.pt` will be chosen or `model.pt` if it isn't present.
 
 ## Dynamic Penetration Adaptation
 
-To load a pre-existing model and see its training performance under incrementing penetration rate on one process. The default incrementation is linear of 3 years (3*365*3000 num-env-steps).
+To load a pre-existing model and see its training performance under incrementing penetration rate on one process. The default incrementation is linear of 3 years (3285000 num-env-steps).
 Make sure to select the trained model on 0.1 penetration rate.
 
 ### A2C
@@ -139,7 +139,7 @@ python3 main.py --algo acktr --penetration-type linear --env-name TrafficLight-s
 ## Visualize
 
 To visualize the training, use Tensorboard.
-Open a new terminal outside of the docker, and navigate to `gym_trafficlight_a2c_ppo_acktr/trained_models/<algo>/<timestamp>/tb/`
+Open a new terminal outside of the docker, and navigate to `gym_trafficlight_a2c_ppo_acktr/trained_models/<algo>/<map>/<pen_rate>/<timestamp>//tb/`
 Have tensorboard installed and type `tensorboard --logdir ./`, 
 Copy the https address logged in the terminal window and navigate to it in your browser (on port 6006)
 
@@ -149,5 +149,5 @@ To evaluate a saved model, specify the path where the model.pt (or best_model.pt
 A folder `eval_model` is created at the specified path with the evaluation results.
 
 ```bash
-python3 eval_model.py --save-path ./trained_models/a2c/2019-01-20_19.35.56 --num_resets 2
+python3 eval_model.py --save-path ./trained_models/a2c/TrafficLight-Lust12408-regular-time-v0/0.1/2019-01-20_19.35.56 --num_resets 2
 ```
