@@ -57,7 +57,9 @@ save_path = ""
 if args.save_dir != "":
     if args.penetration_type == "constant":
         save_path = os.path.join(args.save_dir, args.algo,args.env_name,str(args.penetration_rate),get_time())
-    else :
+    elif "eval" in args.env_name:
+        save_path = os.path.join(args.save_dir, args.algo,args.env_name,"EnvAdapt",get_time())
+    else:
         save_path = os.path.join(args.save_dir, args.algo,args.env_name,"Dynamic",get_time())
     try:
         os.makedirs(save_path)
