@@ -20,7 +20,10 @@ class Policy(nn.Module):
         if state_rep in ['sign','original']:
             self.base = MLPBase(sign_obs_shape, recurrent_policy)
         elif state_rep == 'full':
-            self.base = CNNBase(occ_obs_shape, sign_obs_shape, recurrent_policy)
+            if recurrent_policy:
+                self.base = LSTMBase(occ_obs_shape, sign_obs_shape, recurrent_policy)
+            else:
+                self.base = CNNBase(occ_obs_shape, sign_obs_shape, recurrent_policy)
         else:
             raise NotImplemented('Only implemented sign, origianal, and full state representation')
 
@@ -162,6 +165,48 @@ class Flatten(nn.Module):
         x = x.view(x.size(0), -1)
         return x
 
+from torch.nn.init import xavier_uniform_, zeros_
+def weight_init(m):
+    if isinstance(m, (nn.Conv2d, nn.Conv1d, nn.Linear)):
+        xavier_uniform_(m.weight.data)
+        zeros_(m.bias.data)
+
+class LSTMBase(NNBase):
+    def __init__(self, occ_num_inputs, sign_num_inputs, recurrent, lstm_units = 64, lanes=4, hidden_size=512):
+        combined_size = lstm_units*lanes + sign_num_inputs
+        
+        super(LSTMBase, self).__init__(recurrent, hidden_size, hidden_size)
+
+        self.lstm = nn.LSTM(input_size=1,hidden_size=lstm_units,num_layers=2, batch_first=True)
+
+        self.actor = nn.Sequential(
+            nn.Linear(combined_size,hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size,hidden_size),
+            nn.LeakyReLU()
+        )
+
+        self.critic = nn.Sequential(
+            nn.Linear(combined_size, hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.LeakyReLU()
+        )
+        self.critic_linear = nn.Linear(hidden_size, 1)
+        self.apply(weight_init)
+
+        self.train()
+
+    def forward(self, occ_inputs, sign_inputs, rnn_hxs, masks):
+        occ_inputs = occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),-1, 1)
+        _, (hidden_lanes, _) = self.lstm(occ_inputs)
+        hidden_lanes = hidden_lanes[-1].contiguous().view(sign_inputs.size(0),-1)
+        hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
+        hidden_critic = self.critic(hidden_input)
+        hidden_actor = self.actor(hidden_input)
+
+        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+
 class CNNBase(NNBase):
     def __init__(self, occ_num_inputs, sign_num_inputs, recurrent):
 
@@ -169,52 +214,38 @@ class CNNBase(NNBase):
         hidden_size = int(np.floor(np.power(2,np.floor(np.log2(combined_size))))) # 512
         
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
-
-        init_ = lambda m: init(m,
-            nn.init.orthogonal_,
-            lambda x: nn.init.constant_(x, 0),
-            nn.init.calculate_gain('relu'))
         
         self.lane = nn.Sequential(
-            init_(nn.Conv1d(1,8,6,stride=1)),
+            nn.Conv1d(1,8,6,stride=1),
             nn.ReLU(),nn.MaxPool1d(4),
-            init_(nn.Conv1d(8,16,6,stride=1)),
+            nn.Conv1d(8,16,6,stride=1),
             nn.ReLU(),nn.MaxPool1d(5)
         )
 
         self.actor = nn.Sequential(
-            init_(nn.Linear(combined_size,hidden_size)),
+            nn.Linear(combined_size,hidden_size),
             nn.ReLU(),
-            init_(nn.Linear(hidden_size,hidden_size)),
+            nn.Linear(hidden_size,hidden_size),
             nn.ReLU()
         )
 
         self.critic = nn.Sequential(
-            init_(nn.Linear(combined_size, hidden_size)),
+            nn.Linear(combined_size, hidden_size),
             nn.ReLU(),
-            init_(nn.Linear(hidden_size, hidden_size)),
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU()
         )
 
-        init_ = lambda m: init(m,
-            nn.init.orthogonal_,
-            lambda x: nn.init.constant_(x, 0))
-
-        self.critic_linear = init_(nn.Linear(hidden_size, 1))
+        self.critic_linear = nn.Linear(hidden_size, 1)
+        self.apply(weight_init)
 
         self.train()
 
     def forward(self, occ_inputs, sign_inputs, rnn_hxs, masks):
-
         occ_inputs = occ_inputs.view(occ_inputs.size(0)*occ_inputs.size(1),1,-1)
-        hidden_lanes = self.lane(occ_inputs)        
-
-        hidden_lanes = hidden_lanes.view(-1,4*16*5)
+        hidden_lanes = self.lane(occ_inputs)
+        hidden_lanes = hidden_lanes.view(sign_inputs.size(0),-1)
         hidden_input = torch.cat((hidden_lanes, sign_inputs),1)
-
-        #if self.is_recurrent:
-        #    x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
-
         hidden_critic = self.critic(hidden_input)
         hidden_actor = self.actor(hidden_input)
 
