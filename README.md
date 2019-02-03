@@ -12,6 +12,19 @@ This implementation is a modified version of the public repo of Kostrikov and Il
 
 It has been adapted to work with the gym environemnt [gym_trafficlight](https://github.com/beedrill/gym_trafficlight)
 
+## Citing
+To cite this repo for publication:
+```
+@misc{gym_trafficlight_a2c_ppo_acktr,
+  author = {Romain Leteurtre},
+  title = {A2C, PPO, and ACKTR for Gym TrafficLight Environment},
+  year = {2018},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/romi514/gym_trafficlight_a2c_ppo_acktr}},
+}
+```
+
 ## Requirements
 
 * Python 3
